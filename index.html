@@ -429,7 +429,6 @@ textarea { font: inherit; color: var(--fg); background: var(--surface); border: 
 .menu-btn span { width: 16px; height: 2px; background: var(--fg); border-radius: 2px; }
 .home-menu { position: absolute; right: 12px; top: calc(100% + 6px); width: 220px; display: grid; gap: 8px; padding: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,.18); z-index: 20; }
 .home-menu button { margin-top: 0; width: 100%; }
-#avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
 /* สไตล์ใกล้เคียงเว็บรายรับรายจ่าย: การ์ดมุมมน เงา และปุ่มมุมมน */
 .card-block, .summary { border-radius: 20px; box-shadow: 0 8px 30px rgba(0,0,0,.06); border-color: var(--line); }
 .btn, .btn-small, .btn-primary { border-radius: 14px; }
@@ -459,8 +458,6 @@ textarea { font: inherit; color: var(--fg); background: var(--surface); border: 
     </div>
     <div id="homeMenu" class="home-menu" hidden>
       <button id="profileBtn" class="secondary" type="button">โปรไฟล์</button>
-      <button id="accountBtn" class="secondary" type="button">ชื่อและรูปโปรไฟล์</button>
-      <button id="resetAccountBtn" class="secondary" type="button">ใช้ชื่อและรูปจาก Google</button>
       <button id="themeBtn" class="secondary" type="button">โหมด: อัตโนมัติ</button>
       <button id="logoutBtn" class="secondary" type="button">ออกจากระบบ</button>
     </div>
@@ -637,7 +634,7 @@ const CONFIG = {
 const DEFAULT_GOAL = 2000;
 /* ===== ไอคอนประกอบ: SVG เส้น ใช้สีตามตัวอักษรของจุดนั้น ===== */
 const ICON_PATHS = {
-  plus: '<path d="M8.5 15.5c0-2.5 1.6-4.5 3.5-4.5s3.5 2 3.5 4.5c0 1.8-1.4 2.8-3.5 2.8s-3.5-1-3.5-2.8z"/><circle cx="6" cy="10.5" r="1.6"/><circle cx="9" cy="6.5" r="1.6"/><circle cx="15" cy="6.5" r="1.6"/><circle cx="18" cy="10.5" r="1.6"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
   search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>',
   camera: '<rect x="3" y="7" width="18" height="13" rx="2"/><circle cx="12" cy="13.5" r="3.5"/><path d="M8 7l1.5-2.5h5L16 7"/>',
   image: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 8"/>',
@@ -645,15 +642,15 @@ const ICON_PATHS = {
   edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',
   x: '<path d="M6 6l12 12M18 6L6 18"/>',
   back: '<path d="M15 18l-6-6 6-6"/>',
-  user: '<path d="M5 10V4l4 3q3-1 6 0l4-3v6q1 5-7 10-8-5-7-10z"/><circle cx="9.5" cy="12" r=".9" fill="currentColor"/><circle cx="14.5" cy="12" r=".9" fill="currentColor"/><path d="M11 14.5h2"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/>',
   logout: '<path d="M15 4h4v16h-4"/><path d="M10 8l-4 4 4 4M6 12h9"/>',
   target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
   save: '<path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/>',
   chart: '<path d="M4 20h16M7 16v-5M12 16V7M17 16v-9"/>',
   list: '<path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/>',
-  flame: '<path d="M3 12c3-4 7-5 11-2l4-3v10l-4-3c-4 3-8 2-11-2z"/><circle cx="8" cy="11" r=".9" fill="currentColor"/>',
+  flame: '<path d="M12 3c1 3 4 5 4 9a4 4 0 0 1-8 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 0-8z"/>',
   trash: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',
-  bowl: '<path d="M3 12h18a9 9 0 0 1-18 0z"/><path d="M8 20h8"/><path d="M8 12.5c1-1.2 2.5-1.8 4-1.8 1 0 2 .3 2.8.8l1.5-1-.3 2c.3.6.3 1.2 0 1.8l.3 2-1.6-1c-.8.5-1.8.8-2.8.8-1.5 0-3-.6-4-1.8z"/>',
+  bowl: '<path d="M3 11h18a9 9 0 0 1-18 0z"/><path d="M8 20h8"/>',
   breakfast: '<path d="M3 18h18M7 18a5 5 0 0 1 10 0M12 6v3M5.6 11.6l2 2M18.4 11.6l-2 2"/>',
   lunch: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
   dinner: '<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>',
@@ -844,7 +841,7 @@ function initFirebaseAuth() {
     cloudDb = firebase.firestore();
     firebase.auth().onAuthStateChanged((u) => {
       if (u && (!user || user.id !== u.uid)) {
-        setUser({ id: u.uid, email: u.email || '', name: u.displayName || u.email || 'ผู้ใช้', photo: u.photoURL || '' });
+        setUser({ id: u.uid, email: u.email || '', name: u.displayName || u.email || 'ผู้ใช้' });
       }
     });
   } catch (e) {
@@ -872,47 +869,6 @@ function renderGoogleButton() {
   box.appendChild(b);
 }
 
-// ชื่อและรูปโปรไฟล์: ใช้ค่าจากบัญชี Google เป็นค่าเริ่มต้น และผู้ใช้เปลี่ยนเองได้ (เก็บในเครื่องนี้)
-function accountOverride() {
-  return user ? store.get(`acct_${user.id}`, {}) : {};
-}
-
-function renderAccount() {
-  if (!user) return;
-  const acct = accountOverride();
-  const name = acct.name || user.name || 'ผู้ใช้';
-  const photo = acct.photo || user.photo || '';
-  $('greet').textContent = `สวัสดี ${name}`;
-  const av = $('avatar');
-  av.textContent = name.charAt(0).toUpperCase();
-  if (/^(data:image\/|https:\/\/)/.test(photo)) {
-    const img = document.createElement('img');
-    img.alt = '';
-    img.referrerPolicy = 'no-referrer';
-    img.onerror = () => { img.remove(); av.textContent = name.charAt(0).toUpperCase(); };
-    img.src = photo;
-    av.textContent = '';
-    av.appendChild(img);
-  }
-}
-
-async function editAccount() {
-  if (!user) return;
-  const cur = accountOverride();
-  const r = await ask({
-    title: 'ชื่อและรูปโปรไฟล์',
-    okText: 'บันทึก',
-    fields: [
-      { id: 'name', label: 'ชื่อที่แสดง (เว้นว่างเพื่อใช้ชื่อจาก Google)', value: cur.name || '' },
-      { id: 'photo', label: 'เปลี่ยนรูป (ไม่เลือกก็ได้ จะใช้รูปเดิม)', type: 'file' },
-    ],
-  });
-  if (!r) return;
-  const next = { name: r.name || '', photo: r.photo || cur.photo || '' };
-  store.set(`acct_${user.id}`, next);
-  renderAccount();
-}
-
 function setUser(u) {
   user = u;
   store.set('session', u);
@@ -926,7 +882,8 @@ function enterApp() {
   profile = store.get(`profile_${id}`, null);
   myFoods = store.get(`foods_${id}`, []);
   pullCloud();
-  renderAccount();
+  $('greet').textContent = `สวัสดี ${user.name}`;
+  $('avatar').textContent = (user.name || '?').charAt(0).toUpperCase();
   showLoginError('');
   setHomeNote('');
   showView('home');
@@ -1983,12 +1940,6 @@ function setupEvents() {
   $('customBtn').onclick = () => { setAddMode('manual'); addCustom(); };
   $('menuBtn').onclick = (e) => { e.stopPropagation(); toggleHomeMenu(); };
   $('themeBtn').onclick = cycleTheme;
-  $('accountBtn').onclick = () => { toggleHomeMenu(false); editAccount(); };
-  $('resetAccountBtn').onclick = () => {
-    if (user) store.del(`acct_${user.id}`);
-    toggleHomeMenu(false);
-    renderAccount();
-  };
   document.addEventListener('click', (e) => {
     if (!$('homeMenu').hidden && !$('homeMenu').contains(e.target)) toggleHomeMenu(false);
   });
