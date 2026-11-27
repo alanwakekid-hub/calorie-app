@@ -405,6 +405,18 @@ select {
 .ico { display: inline-flex; width: 1.15em; height: 1.15em; vertical-align: -0.2em; margin-right: 0.35em; flex: none; }
 .ico svg { width: 100%; height: 100%; }
 .btn-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+/* มือถือ: ปุ่มกดง่ายขึ้น และไม่ย่อตัวอักษรเอง */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { overflow-x: hidden; }
+.btn-small, .link-btn, .plain-btn { min-height: 40px; }
+.btn { min-height: 48px; }
+.row-btn, .row { min-height: 52px; }
+.file-btn { display: inline-flex; align-items: center; }
+.search input { min-height: 48px; }
+.field > span { font-size: 15px; }
+input, select, textarea { font-size: 16px; }
+textarea { font: inherit; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px; width: 100%; box-sizing: border-box; min-width: 0; }
+.sub, .note { overflow-wrap: anywhere; }
 </style>
 
 <div class="wrap">
@@ -416,7 +428,7 @@ select {
     <p class="sub">บันทึกมื้ออาหาร ดูสารอาหาร และวิเคราะห์ BMI กับ TDEE</p>
     <div id="gbtn"></div>
     <button id="guestBtn" class="btn btn-primary" type="button" hidden>เข้าใช้แบบทดลอง</button>
-    <p id="setupNote" class="note" hidden>ยังไม่ได้ใส่ Google Client ID ในโค้ด จึงแสดงปุ่มทดลองแทน</p>
+    <p id="setupNote" class="note" hidden>ยังไม่ได้ใส่ Firebase config ในโค้ด ล็อคอินด้วย Google ยังไม่ทำงาน ใช้ปุ่มทดลองแทนได้</p>
     <p id="loginError" class="error" role="alert"></p>
   </div>
 </section>
@@ -569,12 +581,21 @@ select {
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.14.1/firebase-app-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.14.1/firebase-auth-compat.js"></script>
 <script>
 /* ===== ตั้งค่า ===== */
+// ค่าจาก Firebase Console (Project settings → Your apps) ค่าเหล่านี้ไม่ใช่ความลับ
+const FIREBASE_CONFIG = {
+  apiKey: 'AIzaSyAI54itshOgsVe_KAzC3YKFCvYK5CxcekA',
+  authDomain: 'calorie-app-7474f.firebaseapp.com',
+  projectId: 'calorie-app-7474f',
+  storageBucket: 'calorie-app-7474f.firebasestorage.app',
+  messagingSenderId: '542605367460',
+  appId: '1:542605367460:web:631bef15957ab391012e31',
+  measurementId: 'G-MNC8PPLNTN',
+};
 const CONFIG = {
-  // Web client ID จาก Google Cloud (Application type: Web application)
-  // ใส่แล้วปุ่ม Google จะทำงาน ถ้ายังไม่ใส่ จะใช้ปุ่มทดลองแทน
-  GOOGLE_CLIENT_ID: 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com',
   // สมัครฟรีที่ https://api.data.gov/signup
   USDA_API_KEY: 'DEMO_KEY',
 };
@@ -763,32 +784,43 @@ function parseJwt(token) {
   return JSON.parse(decodeURIComponent(pct));
 }
 
-function onGoogleCredential(resp) {
+// ตรวจว่าโหลด Firebase แล้วและใส่ค่า config แล้ว
+function firebaseReady() {
+  return typeof firebase !== 'undefined' && !!FIREBASE_CONFIG.apiKey;
+}
+
+// เริ่ม Firebase และรับผลการล็อคอิน (ถ้าล็อคอินค้างไว้ จะเข้าแอพให้เอง)
+function initFirebaseAuth() {
   try {
-    const info = parseJwt(resp.credential);
-    setUser({ id: info.sub, email: info.email || '', name: info.name || info.email || 'ผู้ใช้' });
+    if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+    firebase.auth().onAuthStateChanged((u) => {
+      if (u && (!user || user.id !== u.uid)) {
+        setUser({ id: u.uid, email: u.email || '', name: u.displayName || u.email || 'ผู้ใช้' });
+      }
+    });
   } catch (e) {
-    showLoginError('อ่านข้อมูลจาก Google ไม่ได้ ลองใหม่อีกครั้ง');
+    showLoginError('เริ่มระบบล็อคอินไม่สำเร็จ');
   }
 }
 
-function initGoogle() {
-  if (!window.google || !google.accounts) {
-    showLoginError('โหลด Google Sign-In ไม่สำเร็จ');
-    return;
-  }
-  google.accounts.id.initialize({ client_id: CONFIG.GOOGLE_CLIENT_ID, callback: onGoogleCredential });
-  google.accounts.id.renderButton($('gbtn'), { theme: 'outline', size: 'large', shape: 'pill', text: 'signin_with', width: 260 });
+function signInWithGoogle() {
+  showLoginError('');
+  const provider = new firebase.auth.GoogleAuthProvider();
+  firebase.auth().signInWithPopup(provider).catch((e) => {
+    if (e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request') return;
+    showLoginError('ล็อคอินด้วย Google ไม่สำเร็จ: ' + (e.code || e.message));
+  });
 }
 
-// โหลดสคริปต์ Google เฉพาะเมื่อใส่ Client ID แล้วเท่านั้น
-function loadGoogleScript() {
-  const s = document.createElement('script');
-  s.src = 'https://accounts.google.com/gsi/client';
-  s.async = true;
-  s.onload = initGoogle;
-  s.onerror = () => showLoginError('โหลด Google Sign-In ไม่สำเร็จ ตรวจการเชื่อมต่ออินเทอร์เน็ต');
-  document.head.appendChild(s);
+function renderGoogleButton() {
+  const box = $('gbtn');
+  box.innerHTML = '';
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'btn btn-primary';
+  b.textContent = 'เข้าสู่ระบบด้วย Google';
+  b.onclick = signInWithGoogle;
+  box.appendChild(b);
 }
 
 function setUser(u) {
@@ -812,7 +844,7 @@ function enterApp() {
 }
 
 function logout() {
-  if (window.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect();
+  if (firebaseReady() && firebase.apps.length) firebase.auth().signOut().catch(() => {});
   store.del('session');
   user = null;
   entries = [];
@@ -1789,14 +1821,14 @@ function setupEvents() {
 
 /* ===== เริ่มทำงาน ===== */
 (function init() {
-  const configured = !CONFIG.GOOGLE_CLIENT_ID.startsWith('YOUR_');
-  $('guestBtn').hidden = configured;
+  const configured = firebaseReady();
+  $('guestBtn').hidden = false;
   $('setupNote').hidden = configured;
   setupEvents();
   loadAiForm();
   decorateIcons();
   initAi();
-  if (configured) loadGoogleScript();
+  if (configured) { renderGoogleButton(); initFirebaseAuth(); }
 
   const saved = store.get('session', null);
   if (saved && saved.id) {
