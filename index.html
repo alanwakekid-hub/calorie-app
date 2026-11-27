@@ -1352,7 +1352,7 @@ function resetPhoto() {
 /* ===== วิเคราะห์รูปอาหาร: เลือกผู้ให้บริการได้ (Claude ในหน้านี้ หรือ API ฟรีอื่นที่ใส่คีย์เอง) ===== */
 const AI_PROVIDERS = {
   claude: { label: 'Claude (ในหน้านี้)', kind: 'claude', needsKey: false, baseUrl: '', models: ['default'] },
-  gemini: { label: 'Google Gemini (มีโควตาฟรี)', kind: 'gemini', needsKey: true, baseUrl: 'https://generativelanguage.googleapis.com/v1beta', models: ['gemini-3.8-flash', 'gemini-flash-latest'] },
+  gemini: { label: 'Google Gemini (มีโควตาฟรี)', kind: 'gemini', needsKey: true, baseUrl: 'https://generativelanguage.googleapis.com/v1beta', models: ['gemini-4-hydrogen', 'gemini-3.8-flash', 'gemini-flash-latest'] },
   openrouter: { label: 'OpenRouter (มีโมเดลฟรี)', kind: 'openai', needsKey: true, baseUrl: 'https://openrouter.ai/api/v1', models: ['nvidia/nemotron-3.5-super-vl:free', 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free', 'inclusionai/ling-3.2-flash:free'] },
   groq: { label: 'Groq', kind: 'openai', needsKey: true, baseUrl: 'https://api.groq.com/openai/v1', models: ['meta-llama/llama-4-scout-17b-16e-instruct'] },
   custom: { label: 'กำหนดเอง (OpenAI-compatible)', kind: 'openai', needsKey: true, baseUrl: '', models: [] },
@@ -1585,7 +1585,8 @@ async function postJson(url, headers, body) {
   if (!res.ok) {
     const e = data && data.error;
     const detail = typeof e === 'string' ? e : (e && e.message) || '';
-    const code = res.status === 401 || res.status === 403 ? 'bad_key'
+    // Gemini ส่ง 400 พร้อมข้อความ API_KEY_INVALID เมื่อคีย์ผิด
+    const code = res.status === 401 || res.status === 403 || (res.status === 400 && /api.?key/i.test(detail)) ? 'bad_key'
       : res.status === 404 ? 'bad_model'
       : res.status === 429 ? 'rate_limited'
       : 'upstream_error';
