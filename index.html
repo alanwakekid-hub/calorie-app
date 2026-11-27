@@ -583,6 +583,7 @@ textarea { font: inherit; color: var(--fg); background: var(--surface); border: 
 
 <script src="https://cdn.jsdelivr.net/npm/firebase@10.14.1/firebase-app-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/firebase@10.14.1/firebase-auth-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.14.1/firebase-firestore-compat.js"></script>
 <script>
 /* ===== ตั้งค่า ===== */
 // ค่าจาก Firebase Console (Project settings → Your apps) ค่าเหล่านี้ไม่ใช่ความลับ
@@ -793,6 +794,7 @@ function firebaseReady() {
 function initFirebaseAuth() {
   try {
     if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+    cloudDb = firebase.firestore();
     firebase.auth().onAuthStateChanged((u) => {
       if (u && (!user || user.id !== u.uid)) {
         setUser({ id: u.uid, email: u.email || '', name: u.displayName || u.email || 'ผู้ใช้' });
@@ -835,6 +837,7 @@ function enterApp() {
   entries = store.get(`entries_${id}`, []);
   profile = store.get(`profile_${id}`, null);
   myFoods = store.get(`foods_${id}`, []);
+  pullCloud();
   $('greet').textContent = `สวัสดี ${user.name}`;
   $('avatar').textContent = (user.name || '?').charAt(0).toUpperCase();
   showLoginError('');
@@ -853,12 +856,75 @@ function logout() {
   showView('login');
 }
 
+/* ===== ซิงก์ข้อมูลขึ้น Firestore (แยกตามบัญชี Google) ===== */
+let cloudDb = null;        // Firestore เมื่อ Firebase พร้อม
+let cloudLoaded = false;   // ดึงข้อมูลจากคลาวด์เสร็จแล้ว จึงจะส่งขึ้นได้
+let pushTimer = null;
+
+function cloudOn() {
+  return !!cloudDb && !!user && user.id !== 'guest';
+}
+
+// แปลงเป็น JSON ธรรมดา เพราะ Firestore ไม่รับค่า undefined
+// รูปอาหารไม่ส่งขึ้นคลาวด์ (ทำให้เอกสารใหญ่เกินขนาด) จึงเก็บไว้ในเครื่องนี้
+function cloudSnapshot() {
+  return JSON.parse(JSON.stringify({
+    goal,
+    profile,
+    foods: myFoods,
+    entries: entries.map(({ photo, ...rest }) => rest),
+  }));
+}
+
+function pushCloud() {
+  if (!cloudOn() || !cloudLoaded) return;
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(() => {
+    cloudDb.collection('users').doc(user.id).set(cloudSnapshot())
+      .catch(() => setHomeNote('ซิงก์ขึ้นคลาวด์ไม่สำเร็จ ข้อมูลยังอยู่ในเครื่องนี้'));
+  }, 400);
+}
+
+async function pullCloud() {
+  cloudLoaded = false;
+  if (!cloudOn()) return;
+  const uid = user.id;
+  try {
+    const snap = await cloudDb.collection('users').doc(uid).get();
+    if (!user || user.id !== uid) return; // ผู้ใช้เปลี่ยนระหว่างรอ
+    if (snap.exists) {
+      const d = snap.data();
+      const photos = new Map(entries.map((e) => [e.id, e.photo]));
+      if (d.goal) goal = d.goal;
+      profile = d.profile || null;
+      myFoods = Array.isArray(d.foods) ? d.foods : [];
+      entries = Array.isArray(d.entries)
+        ? d.entries.map((e) => ({ ...e, photo: photos.get(e.id) || null }))
+        : [];
+      store.set(`goal_${uid}`, goal);
+      store.set(`profile_${uid}`, profile);
+      store.set(`foods_${uid}`, myFoods);
+      store.set(`entries_${uid}`, entries);
+      cloudLoaded = true;
+      renderHome();
+    } else {
+      // ครั้งแรก: อัปโหลดข้อมูลที่มีในเครื่องขึ้นไป
+      cloudLoaded = true;
+      pushCloud();
+    }
+  } catch (e) {
+    cloudLoaded = true; // ใช้ข้อมูลในเครื่องแทน
+    setHomeNote('ดึงข้อมูลจากคลาวด์ไม่สำเร็จ ใช้ข้อมูลในเครื่องแทน');
+  }
+}
+
 /* ===== บันทึกมื้ออาหาร ===== */
 function setHomeNote(msg) { $('homeNote').textContent = msg; }
 function setAddNote(msg) { $('addNote').textContent = msg; }
 
 function saveEntries() {
   const ok = store.set(`entries_${user.id}`, entries);
+  pushCloud();
   setHomeNote(ok ? '' : 'บันทึกไม่สำเร็จ พื้นที่ในเบราว์เซอร์อาจเต็ม ลองลบรายการที่มีรูปออกบ้าง');
 }
 
@@ -943,6 +1009,7 @@ async function editGoal() {
   if (v > 0) {
     goal = v;
     store.set(`goal_${user.id}`, goal);
+    pushCloud();
     renderHome();
   }
 }
@@ -1098,6 +1165,7 @@ function saveProfile(e) {
   store.set(`profile_${user.id}`, profile);
   goal = plan.goalKcal;
   store.set(`goal_${user.id}`, goal);
+  pushCloud();
   renderPlan(plan);
 }
 
@@ -1184,6 +1252,7 @@ function saveMyFoods(list) {
   list.forEach((f) => map.set(f.name.toLowerCase(), { ...f, src: 'mine' }));
   myFoods = [...map.values()];
   store.set(`foods_${user.id}`, myFoods);
+  pushCloud();
 }
 
 async function chooseGrams(food, defaultGrams = 100) {
