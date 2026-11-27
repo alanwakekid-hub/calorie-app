@@ -1476,9 +1476,11 @@ function aiCfgFor(provider) {
     return typeof v === 'string' ? v : '';
   };
   const saved = pick('models');
+  // ค่า Gemini ที่บันทึกก่อนเวอร์ชัน 2 เป็นค่าเก่า ให้ใช้โมเดลเริ่มต้นใหม่จนกว่าจะบันทึกใหม่
+  const stale = provider === 'gemini' && s.v !== 2;
   return {
     provider,
-    model: (saved && !RETIRED_MODELS.includes(saved) ? saved : '') || p.models[0] || '',
+    model: (saved && !stale && !RETIRED_MODELS.includes(saved) ? saved : '') || p.models[0] || '',
     key: pick('keys'),
     baseUrl: pick('bases') || p.baseUrl,
   };
@@ -1530,6 +1532,7 @@ function saveAiForm() {
   const p = AI_PROVIDERS[provider];
   const s = readStoredAi();
   const next = {
+    v: 2,
     provider,
     models: { ...(s.models || {}) },
     keys: { ...(s.keys || {}) },
