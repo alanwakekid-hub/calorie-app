@@ -1352,7 +1352,7 @@ function resetPhoto() {
 /* ===== วิเคราะห์รูปอาหาร: เลือกผู้ให้บริการได้ (Claude ในหน้านี้ หรือ API ฟรีอื่นที่ใส่คีย์เอง) ===== */
 const AI_PROVIDERS = {
   claude: { label: 'Claude (ในหน้านี้)', kind: 'claude', needsKey: false, baseUrl: '', models: ['default'] },
-  gemini: { label: 'Google Gemini (มีโควตาฟรี)', kind: 'gemini', needsKey: true, baseUrl: 'https://generativelanguage.googleapis.com/v1beta', models: ['gemini-flash-latest', 'gemini-3.8-flash'] },
+  gemini: { label: 'Google Gemini (มีโควตาฟรี)', kind: 'gemini', needsKey: true, baseUrl: 'https://generativelanguage.googleapis.com/v1beta', models: ['gemini-3.8-flash', 'gemini-flash-latest'] },
   openrouter: { label: 'OpenRouter (มีโมเดลฟรี)', kind: 'openai', needsKey: true, baseUrl: 'https://openrouter.ai/api/v1', models: ['nvidia/nemotron-3.5-super-vl:free', 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free', 'inclusionai/ling-3.2-flash:free'] },
   groq: { label: 'Groq', kind: 'openai', needsKey: true, baseUrl: 'https://api.groq.com/openai/v1', models: ['meta-llama/llama-4-scout-17b-16e-instruct'] },
   custom: { label: 'กำหนดเอง (OpenAI-compatible)', kind: 'openai', needsKey: true, baseUrl: '', models: [] },
@@ -1465,6 +1465,9 @@ function readStoredAi() {
   return s && typeof s === 'object' ? s : {};
 }
 
+// โมเดลที่ปิดให้ผู้ใช้ใหม่แล้ว ถ้าเคยบันทึกไว้จะเปลี่ยนไปใช้ตัวแนะนำแทน
+const RETIRED_MODELS = ['gemini-2.5-flash'];
+
 function aiCfgFor(provider) {
   const s = readStoredAi();
   const p = AI_PROVIDERS[provider];
@@ -1472,9 +1475,10 @@ function aiCfgFor(provider) {
     const v = s[map] && s[map][provider];
     return typeof v === 'string' ? v : '';
   };
+  const saved = pick('models');
   return {
     provider,
-    model: pick('models') || p.models[0] || '',
+    model: (saved && !RETIRED_MODELS.includes(saved) ? saved : '') || p.models[0] || '',
     key: pick('keys'),
     baseUrl: pick('bases') || p.baseUrl,
   };
