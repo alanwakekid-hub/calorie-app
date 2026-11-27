@@ -1564,14 +1564,22 @@ async function askClaude(photo, chat) {
 
 async function postJson(url, headers, body) {
   let res;
-  try {
-    res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...headers },
-      body: JSON.stringify(body),
-    });
-  } catch (e) {
-    throw aiErr('network');
+  // ถ้าผู้ให้บริการยุ่ง (500/503) จะลองใหม่อัตโนมัติสูงสุด 2 ครั้ง
+  for (let attempt = 0; ; attempt++) {
+    try {
+      res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...headers },
+        body: JSON.stringify(body),
+      });
+    } catch (e) {
+      throw aiErr('network');
+    }
+    if ((res.status === 503 || res.status === 500) && attempt < 2) {
+      await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)));
+      continue;
+    }
+    break;
   }
   const data = await res.json().catch(() => null);
   if (!res.ok) {
