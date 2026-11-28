@@ -546,6 +546,7 @@ textarea { font: inherit; color: var(--fg); background: var(--surface); border: 
     <h2 class="section-title">สารอาหารวันนี้</h2>
     <div id="nutri" class="nutri-grid"></div>
     <p id="nutriNote" class="note"></p>
+    <div id="remainAdvice"></div>
     <p id="homeNote" class="error" role="status"></p>
     <h2 class="section-title">เปรียบเทียบกับวันก่อนๆ</h2>
     <div id="history"></div>
@@ -1388,6 +1389,7 @@ function renderHome() {
   $('bar').classList.toggle('over', over);
 
   renderNutrients(today);
+  renderRemainAdvice(today);
   renderHistory();
 
   const entryRow = (e) => `
@@ -1410,6 +1412,51 @@ function renderHome() {
       return `<h3 class="meal-head">${ico(k)}${esc(MEALS[k])}<span>${mealKcal} kcal</span></h3>${list.map(entryRow).join('')}`;
     }).join('')
     : '<p class="empty">ยังไม่มีรายการวันนี้ กดเพิ่มอาหารด้านล่าง</p>';
+}
+
+// คำแนะนำจากส่วนที่เหลือของโควตาวันนี้ (กฎง่าย ๆ ไม่ใช้ AI)
+function remainTips(today) {
+  const p = profile && profile.plan;
+  if (!p) return ['ตั้งค่าข้อมูลของคุณก่อน เพื่อดูคำแนะนำสำหรับส่วนที่เหลือ'];
+  const t = p.targets;
+  const left = (k) => (t[k] || 0) - sumNutrient(today, k);
+  const kcalLeft = Math.round(goal - today.reduce((s, e) => s + e.kcal, 0));
+  const tips = [];
+  if (kcalLeft <= 0) tips.push('พลังงานครบหรือเกินเป้าแล้ว วันนี้ควรเลือกผักและน้ำเปล่าในมื้อที่เหลือ');
+  else tips.push(`พลังงานเหลือประมาณ ${kcalLeft} kcal ให้มื้อที่เหลือรวมกันไม่เกินนี้`);
+
+  const pL = Math.round(left('protein'));
+  if (pL > 10) tips.push(`โปรตีนยังขาด ${pL} g เติมได้ เช่น ไข่ 1 ฟอง (~6 g) อกไก่ 100 g (~31 g) หรือเต้าหู้ 100 g (~8 g)`);
+  else if (pL > 0) tips.push(`โปรตีนเหลืออีก ${pL} g เติมเล็กน้อย เช่น ไข่ 1 ฟอง หรือนมไม่หวาน 1 กล่อง`);
+  else tips.push('โปรตีนครบตามเป้าแล้ว ไม่จำเป็นต้องเพิ่ม');
+
+  const cL = Math.round(left('carbs'));
+  if (cL > 30) tips.push(`คาร์บยังเหลือ ${cL} g เลือกข้าวหรือธัญพืช 1 ทัพพี (~20 g) และผลไม้ 1 ส่วน (~15 g) ได้`);
+  else if (cL < 0) tips.push(`คาร์บเกินไป ${-cL} g ลดข้าว ขนมปัง และน้ำหวานในมื้อที่เหลือ`);
+
+  const fL = Math.round(left('fat'));
+  if (fL > 10) tips.push(`ไขมันยังเหลือ ${fL} g เลือกไขมันดี เช่น อะโวคาโด ถั่ว หรือน้ำมันมะกอก 1 ช้อนชา (~5 g)`);
+  else if (fL < 0) tips.push(`ไขมันเกิน ${-fL} g งดของทอดและกะทิในมื้อที่เหลือ`);
+
+  const fiL = Math.round(left('fiber'));
+  if (fiL > 5) tips.push(`ใยอาหารยังขาด ${fiL} g เพิ่มผักใบเขียวหรือผลไม้ทั้งเปลือก เช่น ชมพู่ ฝรั่ง`);
+
+  const sL = Math.round(left('sugar'));
+  if (sL < 0) tips.push(`น้ำตาลเกิน ${-sL} g งดน้ำอัดลม ชานม และขนมหวานที่เหลือ`);
+
+  const naL = Math.round(left('sodium'));
+  if (naL < 0) tips.push(`โซเดียมเกิน ${-naL} mg หลีกเลี่ยงซุป น้ำปลา และอาหารแปรรูป ดื่มน้ำเปล่าเพิ่ม`);
+  else if (naL < 500) tips.push(`โซเดียมเหลือ ${naL} mg ควรปรุงรสเพิ่มให้น้อยที่สุด`);
+  return tips;
+}
+
+function renderRemainAdvice(today) {
+  const tips = remainTips(today);
+  $('remainAdvice').innerHTML = `<div class="card-block">
+    <h2 class="section-title">คำแนะนำสำหรับส่วนที่เหลือวันนี้</h2>
+    <ul class="tips">${tips.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>
+    <p class="note">คำแนะนำทั่วไป ไม่ใช่คำแนะนำทางการแพทย์</p>
+  </div>`;
 }
 
 function renderNutrients(today) {
