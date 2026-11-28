@@ -652,6 +652,10 @@ textarea { font: inherit; color: var(--fg); background: var(--surface); border: 
           <input id="importInput" type="file" accept=".csv,.json,text/csv,application/json" class="sr-only">
         </label>
       </details>
+
+      <h2 class="section-title">เมนูที่เคยบันทึก</h2>
+      <p class="note">แตะเพื่อเพิ่มซ้ำ เรียงจากล่าสุด</p>
+      <div id="recentList" class="rows"></div>
     </section>
 
     <section id="aiSec" hidden>
@@ -1969,8 +1973,37 @@ function openAdd() {
   $('addDate').value = todayKey();
   $('aiText').value = '';
   renderResults(HINT);
+  renderRecent();
   resetPhoto();
   showView('add');
+}
+
+// เมนูที่เคยบันทึก (ชื่อซ้ำให้แสดงครั้งล่าสุดครั้งเดียว) เรียงจากล่าสุด
+let recentCache = [];
+function renderRecent() {
+  const seen = new Map();
+  [...entries].reverse().forEach((e) => {
+    const k = String(e.name).toLowerCase();
+    if (!seen.has(k) && e.grams > 0) seen.set(k, e);
+  });
+  recentCache = [...seen.values()].slice(0, 30);
+  $('recentList').innerHTML = recentCache.length
+    ? recentCache.map((e, i) => `
+      <button class="row-btn" type="button" data-r="${i}">
+        ${e.photo && e.photo.startsWith('data:image/') ? `<img class="thumb" src="${e.photo}" alt="">` : ''}
+        <span class="info">
+          <span class="name">${ico('bowl')}${esc(e.name)}</span>
+          <span class="sub">${Math.round(e.kcal)} kcal ต่อ ${Math.round(e.grams)} g</span>
+        </span>
+      </button>`).join('')
+    : '<p class="empty">ยังไม่มีเมนูที่บันทึกไว้ เพิ่มอาหารครั้งแรกได้จากด้านบน</p>';
+}
+
+// แปลงรายการที่บันทึกไว้เป็นค่าต่อ 100 g เพื่อใช้กับการเพิ่มรายการใหม่
+function entryAsFood(e) {
+  const f = 100 / e.grams;
+  const s = (v) => (v == null ? null : Math.round(v * f * 100) / 100);
+  return { name: e.name, src: 'mine', photo: e.photo, kcal: s(e.kcal), protein: s(e.protein), carbs: s(e.carbs), fat: s(e.fat), fiber: s(e.fiber), sugar: s(e.sugar), sodium: s(e.sodium) };
 }
 
 function renderResults(note = '') {
@@ -2703,6 +2736,12 @@ function setupEvents() {
     if (!btn) return;
     const f = foodResults[Number(btn.dataset.i)];
     if (f) chooseGrams(f);
+  });
+  $('recentList').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-r]');
+    if (!b) return;
+    const item = recentCache[Number(b.dataset.r)];
+    if (item) chooseGrams(entryAsFood(item), item.grams);
   });
   $('list').addEventListener('click', (e) => {
     const ed = e.target.closest('[data-edit]');
