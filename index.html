@@ -429,6 +429,7 @@ textarea { font: inherit; color: var(--fg); background: var(--surface); border: 
 .menu-btn span { width: 16px; height: 2px; background: var(--fg); border-radius: 2px; }
 .home-menu { position: absolute; right: 12px; top: calc(100% + 6px); width: 220px; display: grid; gap: 8px; padding: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,.18); z-index: 20; }
 .home-menu button { margin-top: 0; width: 100%; }
+#avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
 /* สไตล์ใกล้เคียงเว็บรายรับรายจ่าย: การ์ดมุมมน เงา และปุ่มมุมมน */
 .card-block, .summary { border-radius: 20px; box-shadow: 0 8px 30px rgba(0,0,0,.06); border-color: var(--line); }
 .btn, .btn-small, .btn-primary { border-radius: 14px; }
@@ -458,6 +459,8 @@ textarea { font: inherit; color: var(--fg); background: var(--surface); border: 
     </div>
     <div id="homeMenu" class="home-menu" hidden>
       <button id="profileBtn" class="secondary" type="button">โปรไฟล์</button>
+      <button id="accountBtn" class="secondary" type="button">ชื่อและรูปโปรไฟล์</button>
+      <button id="resetAccountBtn" class="secondary" type="button">ใช้ชื่อและรูปจาก Google</button>
       <button id="themeBtn" class="secondary" type="button">โหมด: อัตโนมัติ</button>
       <button id="logoutBtn" class="secondary" type="button">ออกจากระบบ</button>
     </div>
@@ -841,7 +844,7 @@ function initFirebaseAuth() {
     cloudDb = firebase.firestore();
     firebase.auth().onAuthStateChanged((u) => {
       if (u && (!user || user.id !== u.uid)) {
-        setUser({ id: u.uid, email: u.email || '', name: u.displayName || u.email || 'ผู้ใช้' });
+        setUser({ id: u.uid, email: u.email || '', name: u.displayName || u.email || 'ผู้ใช้', photo: u.photoURL || '' });
       }
     });
   } catch (e) {
@@ -869,6 +872,47 @@ function renderGoogleButton() {
   box.appendChild(b);
 }
 
+// ชื่อและรูปโปรไฟล์: ใช้ค่าจากบัญชี Google เป็นค่าเริ่มต้น และผู้ใช้เปลี่ยนเองได้ (เก็บในเครื่องนี้)
+function accountOverride() {
+  return user ? store.get(`acct_${user.id}`, {}) : {};
+}
+
+function renderAccount() {
+  if (!user) return;
+  const acct = accountOverride();
+  const name = acct.name || user.name || 'ผู้ใช้';
+  const photo = acct.photo || user.photo || '';
+  $('greet').textContent = `สวัสดี ${name}`;
+  const av = $('avatar');
+  av.textContent = name.charAt(0).toUpperCase();
+  if (/^(data:image\/|https:\/\/)/.test(photo)) {
+    const img = document.createElement('img');
+    img.alt = '';
+    img.referrerPolicy = 'no-referrer';
+    img.onerror = () => { img.remove(); av.textContent = name.charAt(0).toUpperCase(); };
+    img.src = photo;
+    av.textContent = '';
+    av.appendChild(img);
+  }
+}
+
+async function editAccount() {
+  if (!user) return;
+  const cur = accountOverride();
+  const r = await ask({
+    title: 'ชื่อและรูปโปรไฟล์',
+    okText: 'บันทึก',
+    fields: [
+      { id: 'name', label: 'ชื่อที่แสดง (เว้นว่างเพื่อใช้ชื่อจาก Google)', value: cur.name || '' },
+      { id: 'photo', label: 'เปลี่ยนรูป (ไม่เลือกก็ได้ จะใช้รูปเดิม)', type: 'file' },
+    ],
+  });
+  if (!r) return;
+  const next = { name: r.name || '', photo: r.photo || cur.photo || '' };
+  store.set(`acct_${user.id}`, next);
+  renderAccount();
+}
+
 function setUser(u) {
   user = u;
   store.set('session', u);
@@ -882,8 +926,7 @@ function enterApp() {
   profile = store.get(`profile_${id}`, null);
   myFoods = store.get(`foods_${id}`, []);
   pullCloud();
-  $('greet').textContent = `สวัสดี ${user.name}`;
-  $('avatar').textContent = (user.name || '?').charAt(0).toUpperCase();
+  renderAccount();
   showLoginError('');
   setHomeNote('');
   showView('home');
@@ -969,6 +1012,58 @@ async function pullCloud() {
 function setHomeNote(msg) { $('homeNote').textContent = msg; }
 function setAddNote(msg) { $('addNote').textContent = msg; }
 function setAiNote(msg) { $('aiNote').textContent = msg; }
+
+// ไอคอนทางลัดรูปหน้าแมว ใช้เป็นไอคอนแท็บเบราว์เซอร์และตอนเพิ่มลงหน้าจอหลัก
+function catIconPng(size) {
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const g = c.getContext('2d');
+  g.scale(size / 100, size / 100);
+  g.fillStyle = '#007aff';
+  g.fillRect(0, 0, 100, 100);
+  g.fillStyle = '#fff';
+  g.beginPath(); g.ellipse(50, 58, 30, 26, 0, 0, Math.PI * 2); g.fill();
+  g.beginPath(); g.moveTo(24, 44); g.lineTo(26, 14); g.lineTo(44, 34); g.closePath(); g.fill();
+  g.beginPath(); g.moveTo(76, 44); g.lineTo(74, 14); g.lineTo(56, 34); g.closePath(); g.fill();
+  g.fillStyle = '#007aff';
+  g.beginPath(); g.arc(40, 56, 4, 0, Math.PI * 2); g.arc(60, 56, 4, 0, Math.PI * 2); g.fill();
+  g.fillStyle = '#ff8fa3';
+  g.beginPath(); g.moveTo(46, 66); g.lineTo(54, 66); g.lineTo(50, 71); g.closePath(); g.fill();
+  g.strokeStyle = '#fff'; g.lineWidth = 2; g.lineCap = 'round';
+  g.beginPath();
+  g.moveTo(30, 66); g.lineTo(12, 62); g.moveTo(30, 71); g.lineTo(12, 73);
+  g.moveTo(70, 66); g.lineTo(88, 62); g.moveTo(70, 71); g.lineTo(88, 73);
+  g.stroke();
+  return c.toDataURL('image/png');
+}
+
+function setAppIcons() {
+  try {
+    const head = document.head;
+    const fav = document.createElement('link');
+    fav.rel = 'icon'; fav.type = 'image/png'; fav.href = catIconPng(64);
+    head.appendChild(fav);
+    const touch = document.createElement('link');
+    touch.rel = 'apple-touch-icon'; touch.href = catIconPng(180);
+    head.appendChild(touch);
+    const manifest = {
+      name: 'นับแคล',
+      short_name: 'นับแคล',
+      start_url: location.pathname,
+      display: 'standalone',
+      background_color: '#f2f2f7',
+      theme_color: '#007aff',
+      icons: [
+        { src: catIconPng(192), sizes: '192x192', type: 'image/png' },
+        { src: catIconPng(512), sizes: '512x512', type: 'image/png' },
+      ],
+    };
+    const ml = document.createElement('link');
+    ml.rel = 'manifest';
+    ml.href = URL.createObjectURL(new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' }));
+    head.appendChild(ml);
+  } catch (e) { /* ไม่มีไอคอนก็ใช้งานได้ตามปกติ */ }
+}
 
 // เมนูมุมบน และโหมดการแสดงผล (อัตโนมัติ / สว่าง / มืด)
 const THEME_LABEL = { auto: 'อัตโนมัติ', light: 'สว่าง', dark: 'มืด' };
@@ -1940,6 +2035,12 @@ function setupEvents() {
   $('customBtn').onclick = () => { setAddMode('manual'); addCustom(); };
   $('menuBtn').onclick = (e) => { e.stopPropagation(); toggleHomeMenu(); };
   $('themeBtn').onclick = cycleTheme;
+  $('accountBtn').onclick = () => { toggleHomeMenu(false); editAccount(); };
+  $('resetAccountBtn').onclick = () => {
+    if (user) store.del(`acct_${user.id}`);
+    toggleHomeMenu(false);
+    renderAccount();
+  };
   document.addEventListener('click', (e) => {
     if (!$('homeMenu').hidden && !$('homeMenu').contains(e.target)) toggleHomeMenu(false);
   });
@@ -2018,6 +2119,7 @@ function setupEvents() {
   setupEvents();
   loadAiForm();
   applyTheme(store.get('theme', 'auto'));
+  setAppIcons();
   decorateIcons();
   initAi();
   if (configured) { renderGoogleButton(); initFirebaseAuth(); }
