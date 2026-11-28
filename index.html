@@ -485,6 +485,8 @@ textarea { font: inherit; color: var(--fg); background: var(--surface); border: 
 .lg { display: inline-block; width: 10px; height: 10px; border-radius: 3px; background: var(--accent); }
 .lg.over { background: var(--danger); }
 .lg.none { background: var(--line); }
+#editModal .sheet { max-height: 90vh; overflow-y: auto; }
+.e-delete { color: var(--danger); }
 .mark.mark-icon { background: none; padding: 0; }
 .mark.mark-icon svg { display: block; }
 .tagline { font-size: 15px; font-weight: 500; color: var(--muted); white-space: nowrap; }
@@ -696,6 +698,24 @@ textarea { font: inherit; color: var(--fg); background: var(--surface); border: 
     <h3 id="dayTitle"></h3>
     <div id="dayBody"></div>
     <button id="dayClose" class="btn btn-primary wide" type="button">ปิด</button>
+  </div>
+</div>
+
+<div id="editModal" class="overlay" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="editTitle">
+    <h3 id="editTitle">แก้ไขรายการ</h3>
+    <form id="editForm" novalidate>
+      <label class="field"><span>ชื่อ</span><input id="e_name" type="text" maxlength="80"></label>
+      <label class="field"><span>มื้อ</span><select id="e_meal"></select></label>
+      <label class="field"><span>วันที่</span><input id="e_date" type="date"></label>
+      <label class="field"><span>ปริมาณ (g)</span><input id="e_grams" type="number" inputmode="decimal"></label>
+      <div id="e_nutri"></div>
+      <p class="note">ถ้าเปลี่ยนปริมาณ ค่าสารอาหารจะปรับตามสัดส่วนให้ เว้นแต่คุณจะแก้ค่านั้นเอง</p>
+      <p id="e_err" class="error" role="alert"></p>
+      <button class="btn btn-primary wide" type="submit">บันทึกการแก้ไข</button>
+      <button id="e_cancel" class="btn btn-ghost wide" type="button">ยกเลิก</button>
+      <button id="e_delete" class="btn btn-ghost wide e-delete" type="button">ลบรายการนี้</button>
+    </form>
   </div>
 </div>
 
@@ -1209,6 +1229,70 @@ function addEntry(entry) {
   renderHome();
 }
 
+// ----- แก้ไขรายการที่บันทึกไว้แล้ว (ทุกวัน ทุกมื้อ) -----
+const EDIT_NUTRI = [['kcal', 'พลังงาน (kcal)'], ['protein', 'โปรตีน (g)'], ['carbs', 'คาร์โบไฮเดรต (g)'], ['fat', 'ไขมัน (g)'], ['fiber', 'ใยอาหาร (g)'], ['sugar', 'น้ำตาล (g)'], ['sodium', 'โซเดียม (mg)']];
+let editingId = null;
+let dayOpenDate = null;   // วันที่กำลังเปิดดูอยู่ในหน้ารายละเอียดรายวัน
+let deleteArmed = false;  // กดลบครั้งแรกแล้ว รอการยืนยันอีกครั้ง
+
+function editErr(msg) { $('e_err').textContent = msg; }
+
+function armDelete(on) {
+  deleteArmed = on;
+  $('e_delete').textContent = on ? 'กดอีกครั้งเพื่อยืนยันการลบ' : 'ลบรายการนี้';
+}
+
+function openEdit(id) {
+  const e = entries.find((x) => x.id === id);
+  if (!e) return;
+  editingId = id;
+  $('e_name').value = e.name;
+  $('e_meal').innerHTML = Object.keys(MEALS).map((k) => `<option value="${k}">${MEALS[k]}</option>`).join('');
+  $('e_meal').value = e.meal;
+  $('e_date').max = todayKey();
+  $('e_date').value = e.date;
+  $('e_grams').value = e.grams;
+  $('e_nutri').innerHTML = EDIT_NUTRI.map(([k, label]) => {
+    const v = e[k] == null ? '' : e[k];
+    return `<label class="field"><span>${label}</span><input id="e_n_${k}" type="number" inputmode="decimal" value="${v}" data-orig="${v}"></label>`;
+  }).join('');
+  editErr('');
+  armDelete(false);
+  $('editModal').hidden = false;
+}
+
+function closeEdit() {
+  $('editModal').hidden = true;
+  editingId = null;
+  armDelete(false);
+  if (dayOpenDate && !$('dayModal').hidden) openDay(dayOpenDate);
+}
+
+function saveEdit() {
+  const old = entries.find((x) => x.id === editingId);
+  if (!old) return closeEdit();
+  const name = $('e_name').value.trim().slice(0, 80);
+  const grams = numOrNull($('e_grams').value);
+  const date = $('e_date').value;
+  if (!name) return editErr('ใส่ชื่อรายการ');
+  if (!(grams > 0 && grams <= 5000)) return editErr('ปริมาณต้องอยู่ระหว่าง 0–5000 g');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return editErr('เลือกวันที่');
+  const ratio = old.grams > 0 ? grams / old.grams : 1;
+  const next = { ...old, name, meal: $('e_meal').value, date, grams };
+  for (const [k] of EDIT_NUTRI) {
+    const input = $(`e_n_${k}`);
+    // ค่าที่ไม่ได้แก้เอง ให้ปรับตามปริมาณใหม่ ค่าที่แก้เองใช้ตามที่พิมพ์
+    next[k] = input.value === input.dataset.orig
+      ? (old[k] == null ? null : Math.round(old[k] * ratio * 100) / 100)
+      : numOrNull(input.value);
+  }
+  if (next.kcal === null || next.kcal < 0) return editErr('ใส่พลังงาน (kcal)');
+  entries[entries.indexOf(old)] = next;
+  saveEntries();
+  closeEdit();
+  renderHome();
+}
+
 function deleteEntry(id) {
   entries = entries.filter((e) => e.id !== id);
   saveEntries();
@@ -1311,6 +1395,7 @@ function renderHome() {
           ${nutriText(e) ? `<span class="sub">${nutriText(e)}</span>` : ''}
         </div>
         <span class="kcal">${Math.round(e.kcal)} kcal</span>
+        <button class="link-btn" type="button" data-edit="${esc(e.id)}">แก้ไข</button>
         <button class="link-btn" type="button" data-id="${esc(e.id)}">${ico('trash')}ลบ</button>
       </div>`;
   // จัดกลุ่มตามมื้อ เรียงตามลำดับ เช้า กลางวัน เย็น ว่าง
@@ -1420,6 +1505,7 @@ function renderHistory() {
 
 // เปิดดูรายการทั้งหมดของวันที่เลือก แยกตามมื้อ
 function openDay(date) {
+  dayOpenDate = date;
   const list = entries.filter((e) => e.date === date);
   const t = sumDay(list);
   $('dayTitle').textContent = new Date(`${date}T00:00`).toLocaleDateString('th-TH', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
@@ -1432,6 +1518,7 @@ function openDay(date) {
       ${items.map((e) => `<div class="day-item">
         <span class="name">${esc(e.name)}</span>
         <span class="sub">${Math.round(e.grams)} g · ${Math.round(e.kcal)} kcal${nutriText(e) ? ` · ${nutriText(e)}` : ''}</span>
+        <button class="link-btn" type="button" data-edit="${esc(e.id)}">แก้ไข</button>
       </div>`).join('')}
     </div>`;
   }).join('');
@@ -2618,9 +2705,25 @@ function setupEvents() {
     if (f) chooseGrams(f);
   });
   $('list').addEventListener('click', (e) => {
-    const btn = e.target.closest('.link-btn');
+    const ed = e.target.closest('[data-edit]');
+    if (ed) return openEdit(ed.dataset.edit);
+    const btn = e.target.closest('[data-id]');
     if (btn) deleteEntry(btn.dataset.id);
   });
+  $('dayBody').addEventListener('click', (e) => {
+    const ed = e.target.closest('[data-edit]');
+    if (ed) openEdit(ed.dataset.edit);
+  });
+  $('editForm').addEventListener('submit', (e) => { e.preventDefault(); saveEdit(); });
+  $('e_cancel').onclick = closeEdit;
+  // ลบต้องกด 2 ครั้ง กันการลบโดยไม่ตั้งใจ
+  $('e_delete').onclick = () => {
+    if (!deleteArmed) return armDelete(true);
+    const id = editingId;
+    if (id) deleteEntry(id);
+    closeEdit();
+  };
+  $('editModal').addEventListener('click', (e) => { if (e.target === $('editModal')) closeEdit(); });
 
   const onPhotoPicked = async (e) => {
     const file = e.target.files && e.target.files[0];
