@@ -452,6 +452,9 @@ textarea { font: inherit; color: var(--fg); background: var(--surface); border: 
 .day-item { display: flex; flex-direction: column; padding: 6px 0; min-width: 0; }
 .day-item .sub { overflow-wrap: anywhere; }
 #dayBody { max-height: 60vh; overflow-y: auto; }
+.bf-calc { margin: 8px 0; }
+.bf-calc summary, .formula-box summary { cursor: pointer; font-weight: 600; padding: 8px 0; }
+.formula-box { margin-top: 12px; }
 .hist-col:disabled { cursor: default; }
 .hist-bar.none { background: var(--line); }
 .hist-goal span { position: absolute; right: 0; bottom: 2px; padding-left: 4px; font-size: 11px; color: var(--muted); background: var(--surface); }
@@ -547,13 +550,22 @@ textarea { font: inherit; color: var(--fg); background: var(--surface); border: 
       <label class="field"><span>ส่วนสูง (ซม.)</span><input id="p_height" type="number" inputmode="decimal"></label>
       <label class="field"><span>น้ำหนัก (กก.)</span><input id="p_weight" type="number" inputmode="decimal"></label>
       <label class="field"><span>% ไขมันในร่างกาย (ถ้าทราบ ไม่บังคับ)</span><input id="p_bf" type="number" inputmode="decimal"></label>
-      <label class="field"><span>การออกกำลังกาย</span>
-        <select id="p_activity">
-          <option value="1.2">นั่งทำงานเป็นหลัก แทบไม่ออกกำลังกาย</option>
-          <option value="1.375">ออกกำลังกายเบาๆ 1–3 วันต่อสัปดาห์</option>
-          <option value="1.55">ออกกำลังกายปานกลาง 3–5 วันต่อสัปดาห์</option>
-          <option value="1.725">ออกกำลังกายหนัก 6–7 วันต่อสัปดาห์</option>
-          <option value="1.9">ใช้แรงงานหรือซ้อมหนักมาก</option>
+      <details class="bf-calc">
+        <summary>ไม่ทราบ % ไขมัน? คำนวณจากรอบตัว (ไม่บังคับ) · กดเพื่อคำนวณ</summary>
+        <label class="field"><span>รอบคอ (ซม.)</span><input id="p_neck" type="number" inputmode="decimal"></label>
+        <label class="field"><span>รอบเอว (ซม.) วัดระดับสะดือ</span><input id="p_waist" type="number" inputmode="decimal"></label>
+        <label class="field"><span>รอบสะโพก (ซม.) ผู้หญิงต้องใส่</span><input id="p_hip" type="number" inputmode="decimal"></label>
+        <button id="bfCalcBtn" class="btn-small" type="button">คำนวณ % ไขมัน</button>
+        <p id="bfNote" class="note" role="status"></p>
+      </details>
+      <label class="field"><span>การออกกำลังกาย (วันต่อสัปดาห์)</span>
+        <select id="p_activity"></select>
+      </label>
+      <label class="field"><span>ความหนักของการออกกำลังกาย</span>
+        <select id="p_int">
+          <option value="light">เบา (เดินเร็ว โยคะ ยืดเหยียด)</option>
+          <option value="moderate">ปานกลาง (วิ่งเหยาะ ปั่นจักรยาน ว่ายน้ำ)</option>
+          <option value="hard">หนัก (ยกน้ำหนัก HIIT แข่งขัน)</option>
         </select>
       </label>
       <label class="field"><span>เป้าหมาย</span>
@@ -561,6 +573,7 @@ textarea { font: inherit; color: var(--fg); background: var(--surface); border: 
           <option value="lose">ลดน้ำหนัก</option>
           <option value="maintain">คงน้ำหนัก</option>
           <option value="gain">เพิ่มน้ำหนัก/กล้ามเนื้อ</option>
+          <option value="cut_fat">ลดเปอร์เซ็นต์ไขมัน</option>
         </select>
       </label>
       <p id="profError" class="error" role="alert"></p>
@@ -1415,15 +1428,21 @@ function finishModal(ok) {
 /* ===== โปรไฟล์และการวิเคราะห์ ===== */
 function openProfile() {
   const p = profile || {};
+  $('p_activity').innerHTML = ACTIVITY_OPTS.map((o) => `<option value="${o.v}">${o.label}</option>`).join('');
   $('p_sex').value = p.sex || 'm';
   $('p_age').value = p.age ?? '';
   $('p_height').value = p.height ?? '';
   $('p_weight').value = p.weight ?? '';
   $('p_bf').value = p.bodyFat ?? '';
   $('p_activity').value = p.activity || '1.375';
+  $('p_int').value = p.intensity || 'moderate';
   $('p_goal').value = p.goalType || 'maintain';
   $('profError').textContent = '';
-  renderPlan(profile && profile.plan);
+  // แผนที่บันทึกไว้ก่อนมีสูตรใหม่ ให้คำนวณใหม่เพื่อแสดงสูตรครบ
+  const plan = profile && profile.plan && profile.plan.trainDays !== undefined
+    ? profile.plan
+    : (profile && profile.weight ? computePlan(profile) : null);
+  renderPlan(plan);
   showView('profile');
 }
 
@@ -1435,6 +1454,7 @@ function readProfileForm() {
     weight: numOrNull($('p_weight').value),
     bodyFat: numOrNull($('p_bf').value),
     activity: $('p_activity').value,
+    intensity: $('p_int').value,
     goalType: $('p_goal').value,
   };
   if (!data.age || data.age < 10 || data.age > 100) return { error: 'อายุต้องอยู่ระหว่าง 10–100 ปี' };
@@ -1444,30 +1464,77 @@ function readProfileForm() {
   return { data };
 }
 
+// ค่ากิจกรรมตามจำนวนวันออกกำลังกายต่อสัปดาห์ (ค่า x ที่คูณกับ BMR)
+const ACTIVITY_OPTS = [
+  { v: '1.2', days: 0, label: 'นั่งทำงานเป็นหลัก ไม่ออกกำลังกาย (0 วัน)' },
+  { v: '1.375', days: 1.5, label: 'ออกกำลังกาย 1–2 วันต่อสัปดาห์' },
+  { v: '1.46', days: 2.5, label: 'ออกกำลังกาย 2–3 วันต่อสัปดาห์' },
+  { v: '1.55', days: 4, label: 'ออกกำลังกาย 3–5 วันต่อสัปดาห์' },
+  { v: '1.725', days: 6.5, label: 'ออกกำลังกาย 6–7 วันต่อสัปดาห์' },
+  { v: '1.9', days: 7, label: 'ใช้แรงงานหรือซ้อมหนักมาก' },
+];
+// ปรับค่ากิจกรรมตามความหนัก (ไม่ปรับถ้าไม่ออกกำลังกาย)
+const INTENSITY_ADJ = { light: -0.05, moderate: 0, hard: 0.05 };
+const INTENSITY_LABEL = { light: 'เบา', moderate: 'ปานกลาง', hard: 'หนัก' };
+// โปรตีนต่อ กก. LBM ตามเป้าหมาย (ไม่เกิน 2 g ต่อ กก. น้ำหนักตัว)
+const PROTEIN_PER_LBM = { lose: 2.2, maintain: 1.8, gain: 2.0, cut_fat: 2.2 };
+// สัดส่วนไขมันของพลังงานเป้าหมายตามเป้าหมาย
+const FAT_PCT = { lose: 0.25, maintain: 0.25, gain: 0.3, cut_fat: 0.25 };
+// คำแนะนำแยกตามเป้าหมาย
+const GOAL_ADVICE = {
+  lose: ['ตั้งเป้าลดน้ำหนักประมาณ 0.5 กก. ต่อสัปดาห์ (ขาดพลังงานประมาณ 500 kcal ต่อวัน)', 'เน้นโปรตีนให้ครบทุกมื้อเพื่อรักษามวลกล้ามเนื้อ', 'ฝึกแรงต้านอย่างน้อย 2–3 วันต่อสัปดาห์', 'ดูแนวโน้มน้ำหนักและรอบเอวเป็นค่าเฉลี่ยรายสัปดาห์ ไม่ดูรายวัน'],
+  maintain: ['กินใกล้เคียงกับ TDEE เพื่อให้น้ำหนักคงที่', 'ชั่งน้ำหนักสัปดาห์ละ 2–3 ครั้งแล้วดูค่าเฉลี่ย', 'ออกกำลังกายสม่ำเสมอเพื่อรักษามวลกล้ามเนื้อและการเผาผลาญ'],
+  gain: ['กินเกิน TDEE ประมาณ 300 kcal ต่อวัน ให้น้ำหนักขึ้นช้า ๆ ประมาณ 0.25–0.5 กก. ต่อสัปดาห์', 'ฝึกแรงต้านและเน้นโปรตีนในทุกมื้อ', 'ถ้าน้ำหนักขึ้นเร็วเกินไป ให้ลดพลังงานลงเล็กน้อย'],
+  cut_fat: ['ลดพลังงานประมาณ 400 kcal ต่อวัน เพื่อให้เสียไขมันมากกว่ามวลกล้ามเนื้อ', 'โปรตีนสูงประมาณ 2.2 g ต่อ กก. LBM ช่วยรักษากล้ามเนื้อขณะลดไขมัน', 'ฝึกแรงต้านทุกสัปดาห์ เป็นสิ่งสำคัญที่สุดในการรักษามวลกล้ามเนื้อ', 'วัดเปอร์เซ็นต์ไขมันทุก 4 สัปดาห์ด้วยวิธีเดิม (รอบเอว) เพื่อดูผลอย่างสม่ำเสมอ'],
+};
+
 // สูตร: Mifflin-St Jeor (BMR), Boer (LBM กรณีไม่ทราบ % ไขมัน)
 function computePlan(p) {
   const w = p.weight;
   const h = p.height;
+  const bf = p.bodyFat == null ? null : p.bodyFat;
   const bmi = w / ((h / 100) ** 2);
   const bmr = p.sex === 'f'
     ? 10 * w + 6.25 * h - 5 * p.age - 161
     : 10 * w + 6.25 * h - 5 * p.age + 5;
-  const tdee = bmr * Number(p.activity);
-  const lbm = p.bodyFat !== null
-    ? w * (1 - p.bodyFat / 100)
+  const baseAct = Number(p.activity);
+  const actOpt = ACTIVITY_OPTS.find((o) => Number(o.v) === baseAct);
+  const trainDays = actOpt ? actOpt.days : 0;
+  const intensity = INTENSITY_LABEL[p.intensity] ? p.intensity : 'moderate';
+  // ค่ากิจกรรมต่อวัน = ค่าตามจำนวนวันออกกำลังกาย ± ความหนัก (จำกัดช่วง 1.2–1.9)
+  const intensityAdj = trainDays === 0 ? 0 : INTENSITY_ADJ[intensity];
+  const act = Math.round(Math.min(1.9, Math.max(1.2, baseAct + intensityAdj)) * 1000) / 1000;
+  const tdee = bmr * act;
+  const lbm = bf !== null
+    ? w * (1 - bf / 100)
     : (p.sex === 'f' ? 0.252 * w + 0.473 * h - 48.3 : 0.407 * w + 0.267 * h - 19.2);
-  const adjust = { lose: -500, maintain: 0, gain: 300 }[p.goalType] || 0;
+  const adjust = { lose: -500, maintain: 0, gain: 300, cut_fat: -400 }[p.goalType] || 0;
   const floor = p.sex === 'f' ? 1200 : 1500;
   const goalKcal = Math.round(Math.max(floor, tdee + adjust));
-  const protein = Math.round(w * 1.6);
-  const fat = Math.round((goalKcal * 0.25) / 9);
+  // ตามกิจวัตร: ออกกำลังกาย 3 วันขึ้นไป เพิ่มโปรตีน 0.2 g/กก. LBM
+  // ออกกำลังกาย 5 วันขึ้นไป ลดสัดส่วนไขมันลง 5% เพื่อให้คาร์บมีพอสำหรับการซ้อม
+  const proteinPerLbm = (PROTEIN_PER_LBM[p.goalType] || PROTEIN_PER_LBM.maintain) + (trainDays >= 3 ? 0.2 : 0);
+  const fatPct = Math.max(0.2, (FAT_PCT[p.goalType] || FAT_PCT.maintain) - (trainDays >= 5 ? 0.05 : 0));
+  const protein = Math.round(Math.max(40, Math.min(lbm * proteinPerLbm, w * 2)));
+  const fat = Math.round((goalKcal * fatPct) / 9);
   const carbs = Math.max(0, Math.round((goalKcal - protein * 4 - fat * 9) / 4));
   return {
+    sex: p.sex,
+    goalType: p.goalType || 'maintain',
     bmi,
     bmr,
     tdee,
+    activity: act,
+    baseActivity: baseAct,
+    activityLabel: actOpt ? actOpt.label : '',
+    trainDays,
+    intensity,
+    intensityAdj,
     lbm,
-    bodyFatUsed: p.bodyFat !== null,
+    bodyFatUsed: bf !== null,
+    adjust,
+    proteinPerLbm,
+    fatPct,
     goalKcal,
     targets: {
       protein,
@@ -1493,27 +1560,68 @@ function renderPlan(plan) {
     return;
   }
   const t = plan.targets;
+  const male = plan.sex !== 'f';
+  const bmrF = male ? '10×น้ำหนัก + 6.25×ส่วนสูง − 5×อายุ + 5' : '10×น้ำหนัก + 6.25×ส่วนสูง − 5×อายุ − 161';
+  const lbmF = plan.bodyFatUsed
+    ? 'น้ำหนัก × (1 − % ไขมัน ÷ 100)'
+    : (male ? 'Boer: 0.407×น้ำหนัก + 0.267×ส่วนสูง − 19.2' : 'Boer: 0.252×น้ำหนัก + 0.473×ส่วนสูง − 48.3');
+  const adjTxt = plan.adjust ? `${plan.adjust > 0 ? '+' : '−'}${Math.abs(plan.adjust)}` : '±0';
   $('profResult').innerHTML = `
     <div class="card-block">
       <h2 class="section-title">${ico('chart')}ผลการวิเคราะห์</h2>
       <div class="metrics">
         <div class="ncard"><div class="label">BMI</div><div class="nval">${plan.bmi.toFixed(1)}</div><div class="sub">${bmiCategory(plan.bmi)} (เกณฑ์ไทย)</div></div>
         <div class="ncard"><div class="label">BMR</div><div class="nval">${Math.round(plan.bmr)} kcal</div><div class="sub">พลังงานพื้นฐานต่อวัน</div></div>
-        <div class="ncard"><div class="label">TDEE</div><div class="nval">${Math.round(plan.tdee)} kcal</div><div class="sub">ใช้จริงต่อวันโดยประมาณ</div></div>
+        <div class="ncard"><div class="label">TDEE</div><div class="nval">${Math.round(plan.tdee)} kcal</div><div class="sub">ค่ากิจกรรม ${plan.activity} × BMR</div></div>
+        <div class="ncard"><div class="label">ค่ากิจกรรมต่อวัน</div><div class="nval">${plan.activity}</div><div class="sub">${plan.trainDays} วัน/สัปดาห์ · ${INTENSITY_LABEL[plan.intensity]}</div></div>
         <div class="ncard"><div class="label">LBM</div><div class="nval">${plan.lbm.toFixed(1)} kg</div><div class="sub">${plan.bodyFatUsed ? 'จาก % ไขมันที่ระบุ' : 'ประมาณจากสูตร Boer'}</div></div>
       </div>
+      <p class="note">ค่ากิจกรรม ${plan.activity} จาก ${plan.activityLabel} · ความหนัก${INTENSITY_LABEL[plan.intensity]}${plan.intensityAdj ? ` (${plan.intensityAdj > 0 ? '+' : '−'}${Math.abs(plan.intensityAdj).toFixed(2)})` : ''}</p>
       <h2 class="section-title mt">${ico('target')}เป้าหมายต่อวัน</h2>
       <dl class="kv">
-        <div><dt>พลังงาน</dt><dd>${plan.goalKcal} kcal</dd></div>
-        <div><dt>โปรตีน (1.6 g ต่อ กก.)</dt><dd>${t.protein} g</dd></div>
-        <div><dt>ไขมัน (ประมาณ 25% ของพลังงาน)</dt><dd>${t.fat} g</dd></div>
+        <div><dt>พลังงาน (TDEE ${adjTxt} ตามเป้าหมาย)</dt><dd>${plan.goalKcal} kcal</dd></div>
+        <div><dt>โปรตีน (LBM × ${plan.proteinPerLbm} g, ไม่เกิน 2 g ต่อ กก.)</dt><dd>${t.protein} g</dd></div>
+        <div><dt>ไขมัน (${Math.round(plan.fatPct * 100)}% ของพลังงาน)</dt><dd>${t.fat} g</dd></div>
         <div><dt>คาร์โบไฮเดรต (ส่วนที่เหลือ)</dt><dd>${t.carbs} g</dd></div>
         <div><dt>ใยอาหาร (อย่างน้อย)</dt><dd>${t.fiber} g</dd></div>
         <div><dt>น้ำตาล (ไม่เกิน 10% ของพลังงาน)</dt><dd>${t.sugar} g</dd></div>
         <div><dt>โซเดียม (ไม่เกิน)</dt><dd>${t.sodium} mg</dd></div>
       </dl>
+      <h2 class="section-title mt">${ico('target')}คำแนะนำตามเป้าหมาย</h2>
+      <ul class="tips">${(GOAL_ADVICE[plan.goalType] || []).map((t) => `<li>${esc(t)}</li>`).join('')}</ul>
+      <details class="formula-box">
+        <summary>สูตรที่ใช้คำนวณ (กดเพื่อดู)</summary>
+      <dl class="kv">
+        <div><dt>BMR (Mifflin-St Jeor)</dt><dd>${bmrF}</dd></div>
+        <div><dt>LBM</dt><dd>${lbmF}</dd></div>
+        <div><dt>ค่ากิจกรรม</dt><dd>ตามจำนวนวันออกกำลังกาย (${plan.trainDays} วัน/สัปดาห์) ± ความหนัก (เบา −0.05 / ปานกลาง ±0 / หนัก +0.05) จำกัด 1.2–1.9</dd></div>
+        <div><dt>TDEE</dt><dd>BMR × ค่ากิจกรรม (${plan.activity})</dd></div>
+        <div><dt>พลังงานเป้าหมาย</dt><dd>TDEE ${adjTxt} kcal (ลด −500 / คง ±0 / เพิ่ม +300 / ลดไขมัน −400) ไม่ต่ำกว่า ${plan.sex === 'f' ? '1,200' : '1,500'} kcal</dd></div>
+        <div><dt>โปรตีน</dt><dd>LBM × ${plan.proteinPerLbm} g ÷ 4 kcal ต่อ g (ไม่เกิน 2 g ต่อ กก. น้ำหนักตัว; ออกกำลังกาย 3 วันขึ้นไปบวก 0.2)</dd></div>
+        <div><dt>ไขมัน</dt><dd>พลังงานเป้าหมาย × ${Math.round(plan.fatPct * 100)}% ÷ 9 kcal ต่อ g (ออกกำลังกาย 5 วันขึ้นไปลด 5%)</dd></div>
+        <div><dt>คาร์โบไฮเดรต</dt><dd>(พลังงานเป้าหมาย − โปรตีน×4 − ไขมัน×9) ÷ 4 kcal ต่อ g</dd></div>
+      </dl>
+      </details>
       <p class="note mt">ค่าประมาณจากสูตรทั่วไป ไม่ใช่คำแนะนำทางการแพทย์ ถ้ามีโรคประจำตัวหรือกังวลเรื่องการลดน้ำหนัก ควรปรึกษาแพทย์หรือนักโภชนาการ</p>
     </div>`;
+}
+
+// คำนวณ % ไขมันด้วยสูตร US Navy จากส่วนสูงและรอบตัว (ซม.)
+function calcBodyFat() {
+  const note = (msg) => { $('bfNote').textContent = msg; };
+  const male = $('p_sex').value !== 'f';
+  const h = numOrNull($('p_height').value);
+  const neck = numOrNull($('p_neck').value);
+  const waist = numOrNull($('p_waist').value);
+  const hip = numOrNull($('p_hip').value);
+  if (!h || !neck || !waist) return note('ใส่ส่วนสูง รอบคอ และรอบเอวก่อน');
+  if (!male && !hip) return note('ผู้หญิงต้องใส่รอบสะโพกด้วย');
+  const bf = male
+    ? 495 / (1.0324 - 0.19077 * Math.log10(waist - neck) + 0.15456 * Math.log10(h)) - 450
+    : 495 / (1.29579 - 0.35004 * Math.log10(waist + hip - neck) + 0.221 * Math.log10(h)) - 450;
+  if (!isFinite(bf) || bf < 3 || bf > 60) return note('ค่าที่ใส่ดูไม่สมเหตุสมผล ตรวจรอบเอวและรอบคออีกครั้ง');
+  $('p_bf').value = bf.toFixed(1);
+  note(`ประมาณ ${bf.toFixed(1)}% (สูตร US Navy) ใส่ในช่อง % ไขมันให้แล้ว`);
 }
 
 function saveProfile(e) {
@@ -2307,6 +2415,7 @@ function setupEvents() {
   $('photoClear').onclick = resetPhoto;
   $('photoAnalyze').onclick = analyzePhoto;
   $('textAnalyze').onclick = analyzeText;
+  $('bfCalcBtn').onclick = calcBodyFat;
   $('history').addEventListener('click', (e) => {
     const btn = e.target.closest('[data-day]');
     if (btn) openDay(btn.dataset.day);
