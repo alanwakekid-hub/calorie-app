@@ -455,6 +455,28 @@ textarea { font: inherit; color: var(--fg); background: var(--surface); border: 
 .bf-calc { margin: 8px 0; }
 .bf-calc summary, .formula-box summary { cursor: pointer; font-weight: 600; padding: 8px 0; }
 .formula-box { margin-top: 12px; }
+.home-menu #profileBtn { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.prof-card { position: relative; margin: 10px 0 2px; padding: 12px 14px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; cursor: pointer; }
+.prof-card .btn { padding: 8px 12px; font-size: 14px; }
+.prof-card.alert { border: 2px solid var(--danger); box-shadow: 0 0 0 4px rgba(255, 59, 48, .14); }
+.prof-card.alert::after { content: ""; position: absolute; top: 12px; right: 12px; width: 12px; height: 12px; border-radius: 50%; background: var(--danger); box-shadow: 0 0 0 3px var(--surface); }
+.prof-alert { display: flex; flex-direction: column; gap: 2px; }
+.prof-alert strong { font-size: 14px; }
+.prof-alert .sub { font-size: 12px; }
+.prof-card.alert .prof-alert strong { color: var(--danger); }
+.cd-list { display: flex; flex-direction: column; }
+.cd-row { display: flex; justify-content: space-between; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--line); font-size: 12px; color: var(--muted); }
+.cd-row:last-child { border-bottom: 0; }
+.cd-row b { color: var(--fg); font-weight: 600; }
+.cd-row.late b { color: var(--danger); }
+.prof-vals { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--muted); }
+.prof-vals b { color: var(--fg); font-size: 13px; }
+.choice { display: block; width: 100%; margin-top: 8px; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); font: inherit; text-align: left; cursor: pointer; }
+.choice:active { background: var(--accent-soft); }
+.upd-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.upd-row:last-child { border-bottom: 0; }
+.upd-row .info { display: flex; flex-direction: column; min-width: 0; }
+.upd-row .btn-small { flex-shrink: 0; }
 .hist-col:disabled { cursor: default; }
 .hist-bar.none { background: var(--line); }
 .hist-goal span { position: absolute; right: 0; bottom: 2px; padding-left: 4px; font-size: 11px; color: var(--muted); background: var(--surface); }
@@ -501,7 +523,7 @@ textarea { font: inherit; color: var(--fg); background: var(--surface); border: 
       <button id="menuBtn" class="menu-btn" type="button" aria-label="เมนู" aria-expanded="false"><span></span><span></span><span></span></button>
     </div>
     <div id="homeMenu" class="home-menu" hidden>
-      <button id="profileBtn" class="secondary" type="button">โปรไฟล์</button>
+      <button id="profileBtn" class="secondary" type="button">ตั้งค่าข้อมูลของฉัน</button>
       <button id="accountBtn" class="secondary" type="button">ชื่อและรูปโปรไฟล์</button>
       <button id="resetAccountBtn" class="secondary" type="button">ใช้ชื่อและรูปจาก Google</button>
       <button id="themeBtn" class="secondary" type="button">โหมด: อัตโนมัติ</button>
@@ -509,6 +531,7 @@ textarea { font: inherit; color: var(--fg); background: var(--surface); border: 
     </div>
   </header>
   <main class="app with-bottom">
+    <section id="profCard" class="prof-card" hidden></section>
     <div class="summary">
       <div class="label">กินไปแล้ววันนี้</div>
       <div id="consumedText" class="big"></div>
@@ -542,6 +565,11 @@ textarea { font: inherit; color: var(--fg); background: var(--surface); border: 
     </div>
   </header>
   <main class="app">
+    <section id="updPanel" class="card-block" hidden>
+      <h2 class="section-title">อัปเดตข้อมูลประจำ</h2>
+      <p class="note">อัปเดตตามรอบด้านล่างเพื่อให้เป้าหมายแม่นขึ้น ระบบจะคำนวณเป้าหมายใหม่ทุกครั้ง</p>
+      <div id="updList"></div>
+    </section>
     <form id="profForm" class="card-block" novalidate>
       <label class="field"><span>เพศ</span>
         <select id="p_sex"><option value="m">ชาย</option><option value="f">หญิง</option></select>
@@ -1187,7 +1215,77 @@ function deleteEntry(id) {
   renderHome();
 }
 
+// รอบการอัปเดตข้อมูล (จำนวนวัน) และชื่อที่แสดง
+const UPD_EVERY = { weight: 7, bf: 28, activity: 30 };
+const UPD_LABEL = { weight: 'น้ำหนัก', bf: '% ไขมัน / รอบตัว', activity: 'การออกกำลังกาย' };
+
+function daysSince(d) {
+  return Math.floor((new Date(`${todayKey()}T00:00`) - new Date(`${d}T00:00`)) / 86400000);
+}
+
+// รายการที่ถึงรอบอัปเดตแล้ว (ยังไม่เคยอัปเดตถือว่าถึงรอบ)
+function dueUpdates() {
+  if (!profile || !profile.plan) return [];
+  const u = profile.updated || {};
+  return Object.keys(UPD_EVERY).filter((k) => !u[k] || daysSince(u[k]) >= UPD_EVERY[k]);
+}
+
+function renderProfCard() {
+  const box = $('profCard');
+  if (!profile || !profile.plan) {
+    box.hidden = false;
+    box.className = 'prof-card alert';
+    box.innerHTML = `
+      <div class="prof-alert"><strong>ตั้งค่าข้อมูลของคุณก่อน</strong>
+        <span class="sub">ใส่อายุ ส่วนสูง น้ำหนัก และการออกกำลังกาย เพื่อคำนวณเป้าหมายแคลอรี่และสารอาหาร</span></div>
+      <button class="btn btn-primary wide" type="button" data-act="open-profile">ตั้งค่าข้อมูลของฉัน</button>`;
+    return;
+  }
+  const due = dueUpdates();
+  const p = profile;
+  const u = p.updated || {};
+  const ack = store.get(`ack_${user.id}`, {}) || {};
+  // แจ้งเตือนสีแดงเฉพาะรอบที่ยังไม่เคยแตะการ์ด (แตะแล้วจะหายจนกว่าจะเข้ารอบใหม่)
+  const alerting = due.some((k) => ack[k] !== (u[k] || 'never'));
+  const countdown = Object.keys(UPD_EVERY).map((k) => {
+    const left = u[k] ? UPD_EVERY[k] - daysSince(u[k]) : -1;
+    const txt = !u[k] ? 'ยังไม่เคยอัปเดต'
+      : left > 0 ? `อีก ${left} วันถึงรอบ`
+      : left === 0 ? 'ถึงรอบวันนี้'
+      : `เลยรอบมา ${-left} วัน`;
+    return `<div class="cd-row${left <= 0 ? ' late' : ''}"><span>${UPD_LABEL[k]}</span><b>${txt}</b></div>`;
+  }).join('');
+  box.hidden = false;
+  box.className = `prof-card${alerting ? ' alert' : ''}`;
+  box.innerHTML = `
+    <div class="prof-alert">
+      ${due.length ? '<strong>ถึงรอบอัปเดตแล้ว</strong>' : '<strong>ข้อมูลเป็นปัจจุบัน</strong>'}
+      <span class="sub">แตะการ์ดเพื่ออัปเดต</span>
+    </div>
+    <div class="cd-list">${countdown}</div>
+    <div class="prof-vals">
+      <span><b>${p.weight}</b> กก.</span>
+      <span><b>${p.bodyFat != null ? `${p.bodyFat}%` : '—'}</b> ไขมัน</span>
+      <span><b>${p.days ?? Math.round(p.plan.trainDays)}</b> วัน/สัปดาห์</span>
+      <span>เป้า <b>${p.plan.goalKcal}</b> kcal</span>
+    </div>
+    <button class="btn btn-primary wide" type="button" data-act="open-profile">${due.length ? 'อัปเดตเลย' : 'ดู/แก้ไขข้อมูลของฉัน'}</button>`;
+}
+
+// แตะการ์ด: รับทราบรอบที่ถึงแล้ว (ทำให้แจ้งเตือนหาย) แล้วเปิดหน้าอัปเดต
+function onProfCardClick() {
+  if (profile && profile.plan) {
+    const u = profile.updated || {};
+    const ack = store.get(`ack_${user.id}`, {}) || {};
+    dueUpdates().forEach((k) => { ack[k] = u[k] || 'never'; });
+    store.set(`ack_${user.id}`, ack);
+    renderProfCard();
+  }
+  openProfile();
+}
+
 function renderHome() {
+  renderProfCard();
   const today = entries.filter((e) => e.date === todayKey());
   const consumed = today.reduce((sum, e) => sum + e.kcal, 0);
   const remaining = goal - consumed;
@@ -1443,6 +1541,7 @@ function openProfile() {
     ? profile.plan
     : (profile && profile.weight ? computePlan(profile) : null);
   renderPlan(plan);
+  renderUpdates();
   showView('profile');
 }
 
@@ -1606,6 +1705,131 @@ function renderPlan(plan) {
     </div>`;
 }
 
+// สูตร US Navy: คืนค่า % ไขมัน หรือ null ถ้าข้อมูลไม่ครบ/ไม่สมเหตุสมผล
+function navyBodyFat(male, h, neck, waist, hip) {
+  if (!h || !neck || !waist) return null;
+  if (!male && !hip) return null;
+  const v = male
+    ? 495 / (1.0324 - 0.19077 * Math.log10(waist - neck) + 0.15456 * Math.log10(h)) - 450
+    : 495 / (1.29579 - 0.35004 * Math.log10(waist + hip - neck) + 0.221 * Math.log10(h)) - 450;
+  return isFinite(v) ? v : null;
+}
+
+// วันออกกำลังกายต่อสัปดาห์ → ค่ากิจกรรม (ตรงกับตัวเลือกในฟอร์ม)
+function daysToActivity(d, prevActivity) {
+  if (d >= 7 && prevActivity === '1.9') return '1.9';
+  if (d === 0) return '1.2';
+  if (d <= 2) return '1.375';
+  if (d === 3) return '1.46';
+  if (d <= 5) return '1.55';
+  return '1.725';
+}
+
+// บันทึกการอัปเดตเพียงบางค่า แล้วคำนวณเป้าหมายใหม่และบันทึกทันที
+function updateProfile(patch, key, extra = {}) {
+  const { plan: _old, ...rest } = profile || {};
+  const next = { ...rest, ...patch, ...extra, updated: { ...(rest.updated || {}), [key]: todayKey() } };
+  next.plan = computePlan(next);
+  profile = next;
+  store.set(`profile_${user.id}`, profile);
+  goal = next.plan.goalKcal;
+  store.set(`goal_${user.id}`, goal);
+  pushCloud();
+  renderUpdates();
+  renderPlan(next.plan);
+  renderHome();
+}
+
+function renderUpdates() {
+  const p = profile;
+  if (!p || !p.plan) { $('updPanel').hidden = true; return; }
+  $('updPanel').hidden = false;
+  const u = p.updated || {};
+  const fmt = (d) => new Date(`${d}T00:00`).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' });
+  const row = (key, title, value, hint) => `
+    <div class="upd-row">
+      <div class="info">
+        <span class="name">${title}</span>
+        <span class="sub">${value}${u[key] ? ` · อัปเดตล่าสุด ${fmt(u[key])}` : ''}</span>
+        <span class="sub">${hint}</span>
+      </div>
+      <button class="btn-small" type="button" data-upd="${key}">อัปเดต</button>
+    </div>`;
+  $('updList').innerHTML =
+    row('weight', 'น้ำหนัก', `${p.weight} กก.`, 'ควรอัปเดตทุกสัปดาห์') +
+    row('bf', '% ไขมัน / รอบตัว', p.bodyFat != null ? `${p.bodyFat}%` : 'ยังไม่ทราบ', 'ควรวัดทุก 4 สัปดาห์') +
+    row('activity', 'การออกกำลังกาย', `${p.days ?? Math.round(p.plan.trainDays)} วัน/สัปดาห์ · ความหนัก${INTENSITY_LABEL[p.plan.intensity]}`, 'อัปเดตเมื่อตารางออกกำลังกายเปลี่ยน');
+}
+
+// แสดงตัวเลือกให้กดเลือก (ไม่ต้องพิมพ์) คืนค่าที่เลือก หรือ null ถ้าปิดไป
+function pickOption({ title, options }) {
+  return new Promise((resolve) => {
+    const body = $('dayBody');
+    const closeBtn = $('dayClose');
+    $('dayTitle').textContent = title;
+    body.innerHTML = options.map((o, i) => `<button class="choice" type="button" data-i="${i}">${esc(o.label)}</button>`).join('');
+    const finish = (value) => {
+      body.removeEventListener('click', onPick);
+      closeBtn.removeEventListener('click', onClose);
+      $('dayModal').hidden = true;
+      resolve(value);
+    };
+    const onPick = (e) => {
+      const b = e.target.closest('[data-i]');
+      if (b) finish(options[Number(b.dataset.i)].value);
+    };
+    const onClose = () => finish(null);
+    body.addEventListener('click', onPick);
+    closeBtn.addEventListener('click', onClose);
+    $('dayModal').hidden = false;
+  });
+}
+
+async function runUpdate(key) {
+  if (!profile || !profile.plan) return;
+  const err = (msg) => { $('profError').textContent = msg; };
+  $('profError').textContent = '';
+  if (key === 'weight') {
+    const r = await ask({ title: 'อัปเดตน้ำหนัก', okText: 'บันทึก', fields: [
+      { id: 'weight', label: 'น้ำหนักตอนนี้', type: 'number', value: profile.weight, suffix: 'กก.' },
+    ] });
+    if (!r) return;
+    const w = numOrNull(r.weight);
+    if (!(w >= 25 && w <= 300)) return err('น้ำหนักต้องอยู่ระหว่าง 25–300 กก.');
+    return updateProfile({ weight: w }, 'weight');
+  }
+  if (key === 'bf') {
+    const r = await ask({ title: 'อัปเดต % ไขมัน', okText: 'บันทึก', fields: [
+      { id: 'bodyFat', label: '% ไขมันที่ทราบ (ถ้ามี)', type: 'number', value: profile.bodyFat ?? '', suffix: '%' },
+      { id: 'neck', label: 'รอบคอ (ซม.) ถ้าไม่ทราบ %', type: 'number' },
+      { id: 'waist', label: 'รอบเอว (ซม.)', type: 'number' },
+      { id: 'hip', label: 'รอบสะโพก (ซม.) ผู้หญิงต้องใส่', type: 'number' },
+    ] });
+    if (!r) return;
+    let bf = numOrNull(r.bodyFat);
+    if (bf === null) bf = navyBodyFat(profile.sex !== 'f', profile.height, numOrNull(r.neck), numOrNull(r.waist), numOrNull(r.hip));
+    if (bf === null || bf < 3 || bf > 60) return err('ใส่ % ไขมันหรือรอบตัวให้ครบ และค่าต้องอยู่ระหว่าง 3–60%');
+    return updateProfile({ bodyFat: Math.round(bf * 10) / 10 }, 'bf');
+  }
+  if (key === 'activity') {
+    const days = await pickOption({ title: 'ออกกำลังกายกี่วันต่อสัปดาห์', options: [
+      { label: 'ไม่ออกกำลังกาย (0 วัน)', value: 0 },
+      { label: '1–2 วัน', value: 2 },
+      { label: '3 วัน', value: 3 },
+      { label: '4–5 วัน', value: 5 },
+      { label: '6–7 วัน', value: 7 },
+    ] });
+    if (days === null) return;
+    const intensity = await pickOption({ title: 'ความหนักของการออกกำลังกาย', options: [
+      { label: 'เบา (เดินเร็ว โยคะ ยืดเหยียด)', value: 'light' },
+      { label: 'ปานกลาง (วิ่งเหยาะ ปั่นจักรยาน ว่ายน้ำ)', value: 'moderate' },
+      { label: 'หนัก (ยกน้ำหนัก HIIT แข่งขัน)', value: 'hard' },
+    ] });
+    if (intensity === null) return;
+    return updateProfile({ activity: daysToActivity(days, profile.activity) }, 'activity', { days, intensity });
+  }
+}
+
 // คำนวณ % ไขมันด้วยสูตร US Navy จากส่วนสูงและรอบตัว (ซม.)
 function calcBodyFat() {
   const note = (msg) => { $('bfNote').textContent = msg; };
@@ -1616,10 +1840,8 @@ function calcBodyFat() {
   const hip = numOrNull($('p_hip').value);
   if (!h || !neck || !waist) return note('ใส่ส่วนสูง รอบคอ และรอบเอวก่อน');
   if (!male && !hip) return note('ผู้หญิงต้องใส่รอบสะโพกด้วย');
-  const bf = male
-    ? 495 / (1.0324 - 0.19077 * Math.log10(waist - neck) + 0.15456 * Math.log10(h)) - 450
-    : 495 / (1.29579 - 0.35004 * Math.log10(waist + hip - neck) + 0.221 * Math.log10(h)) - 450;
-  if (!isFinite(bf) || bf < 3 || bf > 60) return note('ค่าที่ใส่ดูไม่สมเหตุสมผล ตรวจรอบเอวและรอบคออีกครั้ง');
+  const bf = navyBodyFat(male, h, neck, waist, hip);
+  if (bf === null || bf < 3 || bf > 60) return note('ค่าที่ใส่ดูไม่สมเหตุสมผล ตรวจรอบเอวและรอบคออีกครั้ง');
   $('p_bf').value = bf.toFixed(1);
   note(`ประมาณ ${bf.toFixed(1)}% (สูตร US Navy) ใส่ในช่อง % ไขมันให้แล้ว`);
 }
@@ -1633,7 +1855,14 @@ function saveProfile(e) {
   }
   $('profError').textContent = '';
   const plan = computePlan(r.data);
-  profile = { ...r.data, plan };
+  const prev = profile || {};
+  const updated = { ...(prev.updated || {}) };
+  // ตั้งค่าครั้งแรก ถือว่าอัปเดตครบทุกรายการในวันนี้
+  if (!prev.plan) Object.keys(UPD_EVERY).forEach((k) => { updated[k] = todayKey(); });
+  if (prev.weight !== r.data.weight) updated.weight = todayKey();
+  if (prev.bodyFat !== r.data.bodyFat) updated.bf = todayKey();
+  if (prev.activity !== r.data.activity || prev.intensity !== r.data.intensity) updated.activity = todayKey();
+  profile = { ...r.data, plan, updated, days: undefined };
   store.set(`profile_${user.id}`, profile);
   goal = plan.goalKcal;
   store.set(`goal_${user.id}`, goal);
@@ -2416,6 +2645,11 @@ function setupEvents() {
   $('photoAnalyze').onclick = analyzePhoto;
   $('textAnalyze').onclick = analyzeText;
   $('bfCalcBtn').onclick = calcBodyFat;
+  $('profCard').addEventListener('click', onProfCardClick);
+  $('updList').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-upd]');
+    if (b) runUpdate(b.dataset.upd);
+  });
   $('history').addEventListener('click', (e) => {
     const btn = e.target.closest('[data-day]');
     if (btn) openDay(btn.dataset.day);
