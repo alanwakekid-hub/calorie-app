@@ -19,28 +19,28 @@
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0f1724;
-    --surface: #1e293b;
-    --fg: #e2e8f0;
-    --muted: #94a3b8;
-    --line: rgba(148,163,184,.22);
-    --accent: #60a5fa;
-    --accent-ink: #0f1724;
-    --accent-soft: rgba(96,165,250,.16);
-    --danger: #f87171;
+    --bg: #09090b;
+    --surface: #18181b;
+    --fg: #fafafa;
+    --muted: #a1a1aa;
+    --line: rgba(255,255,255,.08);
+    --accent: #38bdf8;
+    --accent-ink: #04111a;
+    --accent-soft: rgba(56,189,248,.14);
+    --danger: #f43f5e;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0f1724;
-  --surface: #1e293b;
-  --fg: #e2e8f0;
-  --muted: #94a3b8;
-  --line: rgba(148,163,184,.22);
-  --accent: #60a5fa;
-  --accent-ink: #0f1724;
-  --accent-soft: rgba(96,165,250,.16);
-  --danger: #f87171;
+  --bg: #09090b;
+  --surface: #18181b;
+  --fg: #fafafa;
+  --muted: #a1a1aa;
+  --line: rgba(255,255,255,.08);
+  --accent: #38bdf8;
+  --accent-ink: #04111a;
+  --accent-soft: rgba(56,189,248,.14);
+  --danger: #f43f5e;
   color-scheme: dark;
 }
 
@@ -881,6 +881,129 @@ const LOCAL_FOODS = [
   ['มะม่วงสุก', 60, 0.8, 15.0, 0.4, 1.6, 13.7, 1],
   ['แอปเปิ้ล', 52, 0.3, 13.8, 0.2, 2.4, 10.4, 1],
   ['น้ำอัดลม (โคล่า)', 42, 0, 10.6, 0, 0, 10.6, 4],
+  ['ข้าวเหนียว (หุงสุก)', 98, 2.2, 21.7, 0.2, 0.2, 0.1, 0],
+  ['ข้าวโพดต้ม', 96, 3.4, 21.0, 1.5, 2.4, 4.5, 15],
+  ['มันเทศต้ม', 90, 2.0, 20.7, 0.1, 3.3, 4.2, 55],
+  ['มันฝรั่งต้ม', 87, 1.9, 20.1, 0.1, 1.8, 0.9, 6],
+  ['เผือกต้ม', 112, 1.5, 26.5, 0.2, 3.4, 0.6, 9],
+  ['ขนมปังโฮลวีต', 247, 13.0, 41.0, 3.4, 6.8, 5.6, 400],
+  ['ข้าวโอ๊ตดิบ', 389, 16.9, 66.3, 6.9, 10.6, 0.0, 2],
+  ['วุ้นเส้นต้มสุก', 75, 0.1, 18.8, 0.0, 0.0, 0.0, 5],
+  ['เส้นหมี่ขาวต้มสุก', 110, 1.8, 25.0, 0.2, 0.5, 0.0, 5],
+  ['แครกเกอร์', 430, 9.0, 74.0, 11.0, 3.0, 3.0, 900],
+  ['ข้าวเกรียบกุ้ง', 500, 3.0, 60.0, 28.0, 2.0, 2.0, 800],
+  ['ป๊อปคอร์นไม่เติมเนย', 387, 12.9, 77.8, 4.5, 14.5, 0.9, 8],
+  ['เนื้อไก่ต้ม (ติดหนัง)', 215, 27.0, 0.0, 12.0, 0.0, 0.0, 80],
+  ['ไก่ย่าง (ไม่มีหนัง)', 170, 30.0, 0.0, 5.0, 0.0, 0.0, 80],
+  ['อกไก่ดิบ', 120, 22.5, 0.0, 2.6, 0.0, 0.0, 45],
+  ['ไก่ทอดกรอบ (รวมแป้ง)', 260, 22.0, 10.0, 15.0, 0.5, 0.2, 500],
+  ['หมูสันนอกต้ม (ไม่ติดมัน)', 210, 27.0, 0.0, 11.0, 0.0, 0.0, 60],
+  ['หมูสับดิบ', 260, 17.0, 0.0, 21.0, 0.0, 0.0, 70],
+  ['หมูกรอบ (ติดมัน)', 500, 20.0, 0.0, 45.0, 0.0, 0.0, 600],
+  ['เนื้อวัวไม่ติดมันย่าง', 250, 26.0, 0.0, 15.0, 0.0, 0.0, 60],
+  ['เนื้อวัวสับดิบ (ไม่ติดมัน 90%)', 176, 20.0, 0.0, 10.0, 0.0, 0.0, 66],
+  ['ตับหมูต้ม', 165, 26.0, 4.0, 4.5, 0.0, 0.0, 100],
+  ['ไส้กรอกหมู', 301, 12.0, 2.0, 27.0, 0.0, 1.0, 1100],
+  ['แฮม', 145, 21.0, 1.5, 6.0, 0.0, 1.5, 1100],
+  ['เบคอนทอด', 541, 37.0, 1.4, 42.0, 0.0, 0.0, 1717],
+  ['ลูกชิ้นหมู', 240, 13.0, 9.0, 17.0, 0.0, 2.0, 1000],
+  ['ปลาทูนึ่ง', 180, 22.0, 0.0, 10.0, 0.0, 0.0, 650],
+  ['ปลาทูน่ากระป๋องในน้ำ', 116, 25.5, 0.0, 0.8, 0.0, 0.0, 300],
+  ['ปลาซาร์ดีนกระป๋องในน้ำมัน', 208, 24.6, 0.0, 11.5, 0.0, 0.0, 307],
+  ['ปลาสลิดทอด', 350, 45.0, 0.0, 18.0, 0.0, 0.0, 600],
+  ['ปลาแซลมอนดิบ', 208, 20.0, 0.0, 13.0, 0.0, 0.0, 59],
+  ['ปลาดุกย่าง', 190, 24.0, 0.0, 10.0, 0.0, 0.0, 90],
+  ['ปลานิลนึ่ง', 128, 26.0, 0.0, 2.7, 0.0, 0.0, 52],
+  ['ปลาช่อนนึ่ง', 110, 22.0, 0.0, 2.5, 0.0, 0.0, 70],
+  ['หมึกต้ม', 92, 15.6, 3.1, 1.4, 0.0, 0.0, 44],
+  ['ปลาหมึกย่าง', 130, 22.0, 4.0, 2.0, 0.0, 0.0, 500],
+  ['ปูอัด', 90, 12.0, 8.0, 1.0, 0.0, 6.0, 600],
+  ['กุ้งแห้ง', 254, 61.8, 0.0, 3.2, 0.0, 0.0, 1900],
+  ['กะปิ', 75, 4.5, 4.0, 3.0, 0.0, 0.0, 2500],
+  ['น้ำปลา', 35, 5.0, 3.6, 0.0, 0.0, 0.0, 5500],
+  ['ซอสหอยนางรม', 51, 1.1, 11.0, 0.1, 0.0, 7.0, 2200],
+  ['ไข่ไก่ดิบ', 143, 12.6, 0.7, 9.5, 0.0, 0.4, 142],
+  ['ไข่เป็ดต้ม', 185, 13.0, 1.4, 13.8, 0.0, 1.5, 140],
+  ['ไข่นกกระทาต้ม', 158, 13.0, 0.4, 11.0, 0.0, 0.4, 110],
+  ['เต้าหู้ขาวนิ่ม', 55, 5.0, 2.0, 3.0, 0.3, 0.6, 7],
+  ['เต้าหู้ทอด', 290, 17.0, 6.0, 22.0, 1.5, 1.0, 400],
+  ['เต้าหู้ไข่', 70, 6.0, 2.0, 4.0, 0.0, 0.0, 500],
+  ['นมถั่วเหลืองไม่หวาน', 33, 2.9, 1.8, 1.6, 0.4, 0.4, 37],
+  ['นมข้นหวาน', 321, 7.9, 54.4, 8.7, 0.0, 54.0, 127],
+  ['โยเกิร์ตรสธรรมชาติ', 61, 3.5, 4.7, 3.3, 0.0, 4.7, 46],
+  ['ชีสเชดดาร์', 403, 25.0, 1.3, 33.0, 0.0, 0.5, 621],
+  ['ไอศกรีมวานิลลา', 207, 3.5, 24.0, 11.0, 0.7, 21.0, 80],
+  ['ผักบุ้ง', 19, 3.0, 3.1, 0.2, 2.1, 0.3, 113],
+  ['คะน้า', 35, 3.3, 5.1, 0.6, 2.6, 1.3, 58],
+  ['ผักกาดขาว', 13, 1.5, 2.2, 0.2, 1.0, 1.2, 65],
+  ['กะหล่ำปลี', 25, 1.3, 5.8, 0.1, 2.5, 3.2, 18],
+  ['บรอกโคลี', 34, 2.8, 6.6, 0.4, 2.6, 1.7, 33],
+  ['แตงกวา', 15, 0.7, 3.6, 0.1, 0.5, 1.7, 2],
+  ['มะเขือเทศ', 18, 0.9, 3.9, 0.2, 1.2, 2.6, 5],
+  ['แครอต', 41, 0.9, 9.6, 0.2, 2.8, 4.7, 69],
+  ['หอมใหญ่', 40, 1.1, 9.3, 0.1, 1.7, 4.2, 4],
+  ['กระเทียม', 149, 6.4, 33.0, 0.5, 2.1, 1.0, 17],
+  ['พริกขี้หนูสด', 40, 1.9, 9.5, 0.4, 1.5, 5.3, 3],
+  ['ถั่วฝักยาว', 47, 2.8, 8.5, 0.4, 2.7, 1.5, 4],
+  ['มะละกอดิบ', 39, 0.5, 9.4, 0.1, 1.8, 6.0, 9],
+  ['ผักกาดหอม', 15, 1.4, 2.9, 0.2, 1.3, 0.8, 28],
+  ['ฟักทองต้ม', 26, 1.0, 6.5, 0.1, 1.1, 2.8, 1],
+  ['เห็ดฟาง', 22, 3.1, 3.3, 0.3, 1.0, 2.0, 5],
+  ['ถั่วงอก', 30, 3.0, 5.9, 0.2, 1.8, 4.1, 6],
+  ['ต้นหอม', 32, 1.8, 7.3, 0.2, 2.6, 2.3, 16],
+  ['ผักชี', 23, 2.1, 3.7, 0.5, 2.8, 0.9, 46],
+  ['ตำลึง', 19, 3.0, 3.0, 0.3, 1.2, 0.6, 8],
+  ['ส้ม', 47, 0.9, 11.8, 0.1, 2.4, 9.4, 0],
+  ['ฝรั่ง', 68, 2.6, 14.3, 0.9, 5.4, 8.9, 2],
+  ['ชมพู่', 25, 0.6, 5.7, 0.3, 1.0, 5.7, 0],
+  ['มะม่วงดิบ', 58, 0.5, 14.5, 0.1, 1.5, 8.0, 3],
+  ['มะละกอสุก', 43, 0.5, 10.8, 0.3, 1.7, 7.8, 8],
+  ['สับปะรด', 50, 0.5, 13.1, 0.1, 1.4, 9.9, 1],
+  ['แตงโม', 30, 0.6, 7.6, 0.2, 0.4, 6.2, 1],
+  ['องุ่น', 69, 0.7, 18.1, 0.2, 0.9, 15.5, 2],
+  ['ลำไย', 60, 1.3, 15.1, 0.1, 1.1, 15.0, 0],
+  ['ลิ้นจี่', 66, 0.8, 16.5, 0.4, 1.3, 15.2, 1],
+  ['เงาะ', 82, 0.7, 20.9, 0.2, 1.0, 15.0, 0],
+  ['มังคุด', 73, 0.4, 17.9, 0.6, 1.8, 14.0, 0],
+  ['ทุเรียน', 147, 1.5, 27.1, 5.3, 3.8, 6.8, 2],
+  ['ขนุน', 95, 1.7, 23.2, 0.6, 1.5, 19.0, 2],
+  ['สตรอว์เบอร์รี', 32, 0.7, 7.7, 0.3, 2.0, 4.9, 1],
+  ['มะขามเปียก', 239, 2.8, 62.5, 0.6, 5.1, 57.0, 28],
+  ['เม็ดมะม่วงหิมพานต์', 553, 18.0, 30.0, 44.0, 3.3, 5.9, 12],
+  ['ถั่วลิสงคั่ว', 567, 25.8, 16.1, 49.2, 8.5, 4.7, 18],
+  ['เมล็ดทานตะวัน', 584, 20.8, 20.0, 51.5, 8.6, 2.6, 3],
+  ['วอลนัท', 654, 15.2, 13.7, 65.2, 6.7, 2.6, 2],
+  ['ลูกเกด', 299, 3.1, 79.2, 0.5, 3.7, 59.2, 11],
+  ['มันฝรั่งแผ่นทอด', 536, 7.0, 53.0, 35.0, 4.4, 0.5, 525],
+  ['ช็อกโกแลตดำ 70%', 598, 7.8, 46.0, 43.0, 11.0, 24.0, 20],
+  ['น้ำมันพืช', 884, 0.0, 0.0, 100.0, 0.0, 0.0, 0],
+  ['น้ำมันมะกอก', 884, 0.0, 0.0, 100.0, 0.0, 0.0, 2],
+  ['กะทิ', 197, 2.3, 2.8, 21.3, 0.0, 1.6, 15],
+  ['เนยสด', 717, 0.9, 0.1, 81.0, 0.0, 0.1, 11],
+  ['มายองเนส', 680, 1.0, 0.6, 75.0, 0.0, 0.6, 635],
+  ['ซีอิ๊วขาว', 53, 8.1, 4.9, 0.6, 0.8, 0.4, 5493],
+  ['ซอสพริก', 90, 1.2, 19.5, 0.5, 1.0, 14.3, 1000],
+  ['ซอสมะเขือเทศ (เคชัป)', 112, 1.7, 26.0, 0.1, 0.3, 22.0, 907],
+  ['น้ำตาลทราย', 387, 0.0, 100.0, 0.0, 0.0, 100.0, 1],
+  ['น้ำผึ้ง', 304, 0.3, 82.4, 0.0, 0.2, 82.1, 4],
+  ['น้ำมะนาว', 22, 0.4, 6.9, 0.2, 0.3, 2.5, 1],
+  ['น้ำพริกเผา', 260, 5.0, 35.0, 11.0, 4.0, 20.0, 1000],
+  ['เค้กช็อกโกแลต', 371, 4.9, 50.0, 17.0, 1.8, 36.0, 300],
+  ['โดนัท', 452, 4.9, 51.0, 25.0, 1.7, 23.0, 350],
+  ['คุกกี้ช็อกโกแลตชิป', 488, 5.5, 64.0, 24.0, 2.1, 38.0, 400],
+  ['ข้าวเหนียวมูน', 180, 3.0, 35.0, 3.0, 0.8, 9.0, 60],
+  ['บัวลอยไข่หวาน', 115, 2.0, 22.0, 2.5, 0.5, 12.0, 15],
+  ['ขนมชั้น', 205, 3.0, 40.0, 4.0, 0.5, 26.0, 80],
+  ['ไอศกรีมกะทิ', 210, 2.5, 22.0, 12.0, 0.5, 18.0, 80],
+  ['น้ำเปล่า', 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0],
+  ['กาแฟดำ', 2, 0.3, 0.0, 0.0, 0.0, 0.0, 5],
+  ['ชาเขียวไม่หวาน', 1, 0.2, 0.2, 0.0, 0.0, 0.0, 1],
+  ['ชาไทยเย็น (หวาน)', 150, 1.5, 22.0, 6.0, 0.0, 20.0, 60],
+  ['นมถั่วเหลืองหวาน', 60, 2.5, 8.0, 2.0, 0.5, 6.0, 30],
+  ['เครื่องดื่มเกลือแร่', 22, 0.0, 5.5, 0.0, 0.0, 5.0, 220],
+  ['น้ำส้มคั้น (ไม่เติมน้ำตาล)', 45, 0.7, 10.4, 0.2, 0.2, 8.4, 1],
+  ['เบียร์', 43, 0.5, 3.6, 0.0, 0.0, 0.0, 4],
+  ['ไวน์แดง', 85, 0.1, 2.6, 0.0, 0.0, 0.6, 4],
 ].map(([name, kcal, protein, carbs, fat, fiber, sugar, sodium]) => ({
   name, kcal, protein, carbs, fat, fiber, sugar, sodium, src: 'common',
 }));
@@ -1199,7 +1322,7 @@ function applyTheme(mode) {
 }
 function cycleTheme() {
   const order = ['auto', 'light', 'dark'];
-  const cur = store.get('theme', 'auto');
+  const cur = store.get('theme', 'dark');
   const next = order[(order.indexOf(cur) + 1) % order.length];
   store.set('theme', next);
   applyTheme(next);
@@ -1414,39 +1537,47 @@ function renderHome() {
     : '<p class="empty">ยังไม่มีรายการวันนี้ กดเพิ่มอาหารด้านล่าง</p>';
 }
 
-// คำแนะนำจากส่วนที่เหลือของโควตาวันนี้ (กฎง่าย ๆ ไม่ใช้ AI)
-function remainTips(today) {
-  const p = profile && profile.plan;
-  if (!p) return ['ตั้งค่าข้อมูลของคุณก่อน เพื่อดูคำแนะนำสำหรับส่วนที่เหลือ'];
-  const t = p.targets;
-  const left = (k) => (t[k] || 0) - sumNutrient(today, k);
-  const kcalLeft = Math.round(goal - today.reduce((s, e) => s + e.kcal, 0));
+// สรุปสั้น ๆ ของวันนี้: พลังงานที่เหลือหรือเกิน และสารอาหารที่เกิน/ขาด
+function shortTips(today) {
+  const r = remainOf(today);
+  if (!r) return ['ตั้งค่าข้อมูลของคุณก่อน เพื่อดูคำแนะนำ'];
+  const w = profile && profile.weight ? profile.weight : 70;
+  const minsFor = (kcal, met) => Math.ceil(kcal / (met * 3.5 * w / 200));
+  const act = (kcal) => `เดินเร็ว ${minsFor(kcal, 3.5)} นาที · ปั่นจักรยาน ${minsFor(kcal, 6.8)} นาที · วิ่งเหยาะ ${minsFor(kcal, 7)} นาที`;
   const tips = [];
-  if (kcalLeft <= 0) tips.push('พลังงานครบหรือเกินเป้าแล้ว วันนี้ควรเลือกผักและน้ำเปล่าในมื้อที่เหลือ');
-  else tips.push(`พลังงานเหลือประมาณ ${kcalLeft} kcal ให้มื้อที่เหลือรวมกันไม่เกินนี้`);
 
-  const pL = Math.round(left('protein'));
-  if (pL > 10) tips.push(`โปรตีนยังขาด ${pL} g เติมได้ เช่น ไข่ 1 ฟอง (~6 g) อกไก่ 100 g (~31 g) หรือเต้าหู้ 100 g (~8 g)`);
-  else if (pL > 0) tips.push(`โปรตีนเหลืออีก ${pL} g เติมเล็กน้อย เช่น ไข่ 1 ฟอง หรือนมไม่หวาน 1 กล่อง`);
-  else tips.push('โปรตีนครบตามเป้าแล้ว ไม่จำเป็นต้องเพิ่ม');
+  // พลังงาน: เกินให้แนะนำกิจกรรม / ยังเหลือให้บอกงบที่เหลือ
+  if (r.kcal < 0) {
+    const k = Math.round(-r.kcal);
+    tips.push(`แคลอรี่เกิน ${k} kcal → ${act(k)}`);
+  } else {
+    tips.push(`พลังงานเหลือประมาณ ${Math.round(r.kcal)} kcal ให้มื้อที่เหลือรวมกันไม่เกินนี้`);
+  }
 
-  const cL = Math.round(left('carbs'));
-  if (cL > 30) tips.push(`คาร์บยังเหลือ ${cL} g เลือกข้าวหรือธัญพืช 1 ทัพพี (~20 g) และผลไม้ 1 ส่วน (~15 g) ได้`);
-  else if (cL < 0) tips.push(`คาร์บเกินไป ${-cL} g ลดข้าว ขนมปัง และน้ำหวานในมื้อที่เหลือ`);
+  // สารอาหารที่เกิน: บอกปริมาณและกิจกรรมที่ช่วยเผา
+  if (r.fat < 0) {
+    const g = Math.round(-r.fat);
+    tips.push(`ไขมันเกิน ${g} g (≈ ${g * 9} kcal) → ${act(g * 9)} · งดของทอดและกะทิ`);
+  }
+  if (r.sugar < 0) {
+    const g = Math.round(-r.sugar);
+    tips.push(`น้ำตาลเกิน ${g} g (≈ ${g * 4} kcal) → ${act(g * 4)} · งดน้ำอัดลมและชานม`);
+  }
+  if (r.carbs < 0) {
+    const g = Math.round(-r.carbs);
+    tips.push(`คาร์บเกิน ${g} g (≈ ${g * 4} kcal) → ${act(g * 4)} · ลดข้าวและขนมปัง`);
+  }
+  if (r.sodium < 0) {
+    tips.push(`โซเดียมเกิน ${Math.round(-r.sodium)} mg → ดื่มน้ำเปล่าเพิ่ม หลีกเลี่ยงซุปและอาหารแปรรูป`);
+  }
 
-  const fL = Math.round(left('fat'));
-  if (fL > 10) tips.push(`ไขมันยังเหลือ ${fL} g เลือกไขมันดี เช่น อะโวคาโด ถั่ว หรือน้ำมันมะกอก 1 ช้อนชา (~5 g)`);
-  else if (fL < 0) tips.push(`ไขมันเกิน ${-fL} g งดของทอดและกะทิในมื้อที่เหลือ`);
-
-  const fiL = Math.round(left('fiber'));
-  if (fiL > 5) tips.push(`ใยอาหารยังขาด ${fiL} g เพิ่มผักใบเขียวหรือผลไม้ทั้งเปลือก เช่น ชมพู่ ฝรั่ง`);
-
-  const sL = Math.round(left('sugar'));
-  if (sL < 0) tips.push(`น้ำตาลเกิน ${-sL} g งดน้ำอัดลม ชานม และขนมหวานที่เหลือ`);
-
-  const naL = Math.round(left('sodium'));
-  if (naL < 0) tips.push(`โซเดียมเกิน ${-naL} mg หลีกเลี่ยงซุป น้ำปลา และอาหารแปรรูป ดื่มน้ำเปล่าเพิ่ม`);
-  else if (naL < 500) tips.push(`โซเดียมเหลือ ${naL} mg ควรปรุงรสเพิ่มให้น้อยที่สุด`);
+  // สารอาหารที่ยังเหลือโควตา: แนะนำอาหารที่ควรกินต่อ
+  if (r.protein > 10) tips.push(`โปรตีนยังขาด ${Math.round(r.protein)} g เช่น ไข่ 1 ฟอง (~6 g) อกไก่ 100 g (~31 g) หรือเต้าหู้ 100 g (~8 g)`);
+  else if (r.protein > 0) tips.push(`โปรตีนเหลืออีก ${Math.round(r.protein)} g เช่น ไข่ 1 ฟอง หรือนมไม่หวาน 1 กล่อง`);
+  if (r.carbs > 30) tips.push(`คาร์บยังเหลือ ${Math.round(r.carbs)} g เลือกข้าวหรือธัญพืช 1 ทัพพี (~20 g) และผลไม้ 1 ส่วน (~15 g) ได้`);
+  if (r.fat > 10) tips.push(`ไขมันยังเหลือ ${Math.round(r.fat)} g เลือกไขมันดี เช่น อะโวคาโด ถั่ว หรือน้ำมันมะกอก 1 ช้อนชา (~5 g)`);
+  if (r.fiber > 5) tips.push(`ใยอาหารยังขาด ${Math.round(r.fiber)} g เพิ่มผักใบเขียวหรือผลไม้ทั้งเปลือก เช่น ชมพู่ ฝรั่ง`);
+  if (r.sodium >= 0 && r.sodium < 500) tips.push(`โซเดียมเหลือ ${Math.round(r.sodium)} mg ควรปรุงรสเพิ่มให้น้อยที่สุด`);
   return tips;
 }
 
@@ -1464,6 +1595,60 @@ const MENU_SUGGESTIONS = [
   { name: 'กล้วยหอม 1 ผล', grams: 100, kcal: 90, protein: 1, carbs: 23, fat: 0.3, fiber: 2.6, sugar: 12, sodium: 1 },
   { name: 'แอปเปิล 1 ผล', grams: 180, kcal: 95, protein: 0.5, carbs: 25, fat: 0.3, fiber: 4.4, sugar: 19, sodium: 2 },
   { name: 'ถั่วอัลมอนด์ 20 เม็ด', grams: 30, kcal: 175, protein: 6, carbs: 6, fat: 15, fiber: 3.5, sugar: 1.2, sodium: 0 },
+  { name: 'ต้มยำกุ้งน้ำใส 1 ชาม', grams: 350, kcal: 150, protein: 20, carbs: 8, fat: 4, fiber: 2, sugar: 3, sodium: 1100 },
+  { name: 'ต้มข่าไก่ 1 ชาม', grams: 350, kcal: 280, protein: 22, carbs: 8, fat: 18, fiber: 1, sugar: 4, sodium: 800 },
+  { name: 'แกงเลียง 1 ชาม', grams: 300, kcal: 130, protein: 8, carbs: 14, fat: 4, fiber: 4, sugar: 3, sodium: 700 },
+  { name: 'ส้มตำไทย ไม่ใส่ปูเค็ม 1 จาน', grams: 250, kcal: 130, protein: 4, carbs: 25, fat: 2, fiber: 4, sugar: 15, sodium: 900 },
+  { name: 'ไก่ย่างครึ่งตัวไม่มีหนัง 150 g', grams: 150, kcal: 250, protein: 40, carbs: 0, fat: 9, fiber: 0, sugar: 0, sodium: 300 },
+  { name: 'ยำวุ้นเส้นกุ้ง 1 จาน', grams: 250, kcal: 220, protein: 15, carbs: 30, fat: 5, fiber: 3, sugar: 8, sodium: 1000 },
+  { name: 'ยำทูน่า 1 จาน', grams: 250, kcal: 260, protein: 22, carbs: 12, fat: 14, fiber: 2, sugar: 5, sodium: 800 },
+  { name: 'ลาบหมู ไม่มีข้าว 150 g', grams: 200, kcal: 230, protein: 20, carbs: 4, fat: 15, fiber: 2, sugar: 2, sodium: 600 },
+  { name: 'ปลาทอดไม่มีน้ำจิ้ม 150 g', grams: 150, kcal: 300, protein: 32, carbs: 2, fat: 18, fiber: 0, sugar: 0, sodium: 400 },
+  { name: 'โจ๊กหมู 1 ชาม', grams: 400, kcal: 250, protein: 12, carbs: 40, fat: 5, fiber: 1, sugar: 2, sodium: 900 },
+  { name: 'ข้าวต้มปลา 1 ชาม', grams: 400, kcal: 200, protein: 12, carbs: 30, fat: 4, fiber: 1, sugar: 2, sodium: 800 },
+  { name: 'ก๋วยเตี๋ยวน้ำใสไก่ 1 ชาม', grams: 450, kcal: 380, protein: 25, carbs: 55, fat: 7, fiber: 2, sugar: 3, sodium: 1300 },
+  { name: 'ก๋วยจั๊บน้ำใส 1 ชาม', grams: 450, kcal: 300, protein: 14, carbs: 50, fat: 5, fiber: 2, sugar: 3, sodium: 1000 },
+  { name: 'ขนมจีนน้ำยาป่า 1 จาน', grams: 400, kcal: 300, protein: 12, carbs: 50, fat: 6, fiber: 4, sugar: 4, sodium: 1000 },
+  { name: 'เย็นตาโฟ 1 ชาม', grams: 450, kcal: 450, protein: 18, carbs: 60, fat: 15, fiber: 2, sugar: 8, sodium: 1200 },
+  { name: 'ผัดซีอิ๊วหมู เส้นใหญ่ 1 จาน', grams: 400, kcal: 550, protein: 22, carbs: 75, fat: 18, fiber: 2, sugar: 6, sodium: 1400 },
+  { name: 'ผัดไทยกุ้งสด 1 จาน', grams: 400, kcal: 600, protein: 25, carbs: 80, fat: 20, fiber: 3, sugar: 20, sodium: 1200 },
+  { name: 'ผัดกะเพราหมูสับไข่ดาว 1 จาน', grams: 350, kcal: 600, protein: 25, carbs: 60, fat: 28, fiber: 2, sugar: 4, sodium: 1000 },
+  { name: 'ข้าวผัดไข่ 1 จาน', grams: 300, kcal: 480, protein: 14, carbs: 70, fat: 16, fiber: 2, sugar: 3, sodium: 800 },
+  { name: 'ข้าวผัดกุ้ง 1 จาน', grams: 300, kcal: 480, protein: 22, carbs: 65, fat: 14, fiber: 2, sugar: 3, sodium: 900 },
+  { name: 'ข้าวไข่เจียว 1 จาน', grams: 300, kcal: 500, protein: 16, carbs: 65, fat: 20, fiber: 1, sugar: 2, sodium: 800 },
+  { name: 'ข้าวมันไก่ ไม่ติดหนัง 1 จาน', grams: 350, kcal: 560, protein: 30, carbs: 75, fat: 16, fiber: 1, sugar: 2, sodium: 900 },
+  { name: 'ข้าวขาหมู ไม่รวมหนัง 1 จาน', grams: 350, kcal: 600, protein: 28, carbs: 75, fat: 20, fiber: 1, sugar: 3, sodium: 1000 },
+  { name: 'ข้าวหมูแดง 1 จาน', grams: 350, kcal: 580, protein: 28, carbs: 75, fat: 18, fiber: 1, sugar: 6, sodium: 1100 },
+  { name: 'ข้าวเหนียวมะม่วง 1 ชุด', grams: 250, kcal: 500, protein: 6, carbs: 85, fat: 16, fiber: 3, sugar: 35, sodium: 150 },
+  { name: 'ไก่ทอดหาดใหญ่ 1 ชิ้น', grams: 100, kcal: 300, protein: 22, carbs: 10, fat: 20, fiber: 0, sugar: 1, sodium: 600 },
+  { name: 'เต้าหู้ทอด 5 ชิ้น', grams: 100, kcal: 300, protein: 14, carbs: 15, fat: 20, fiber: 1, sugar: 1, sodium: 500 },
+  { name: 'ไข่เจียวหมูสับ 2 ฟอง', grams: 180, kcal: 380, protein: 22, carbs: 3, fat: 30, fiber: 0, sugar: 1, sodium: 700 },
+  { name: 'ปลากระป๋องกับข้าวสวย 1 ทัพพี', grams: 250, kcal: 300, protein: 22, carbs: 30, fat: 10, fiber: 1, sugar: 1, sodium: 600 },
+  { name: 'สุกี้น้ำ ไม่รวมเส้น 1 จาน', grams: 400, kcal: 250, protein: 25, carbs: 15, fat: 8, fiber: 4, sugar: 4, sodium: 1200 },
+  { name: 'ซุปข้าวโพดไก่ 1 ถ้วย', grams: 300, kcal: 220, protein: 12, carbs: 30, fat: 6, fiber: 2, sugar: 6, sodium: 900 },
+  { name: 'แซนด์วิชไก่ 1 ชิ้น', grams: 130, kcal: 300, protein: 18, carbs: 35, fat: 9, fiber: 3, sugar: 5, sodium: 600 },
+  { name: 'แซนด์วิชทูน่า 1 ชิ้น', grams: 130, kcal: 320, protein: 18, carbs: 35, fat: 12, fiber: 2, sugar: 5, sodium: 650 },
+  { name: 'ซาลาเปาไส้หมู 1 ลูก', grams: 90, kcal: 250, protein: 8, carbs: 35, fat: 8, fiber: 1, sugar: 6, sodium: 400 },
+  { name: 'ผัดผักบุ้งไฟแดง 1 จาน', grams: 200, kcal: 200, protein: 6, carbs: 12, fat: 14, fiber: 3, sugar: 3, sodium: 800 },
+  { name: 'น้ำพริกปลาทู พร้อมผักต้ม', grams: 250, kcal: 250, protein: 15, carbs: 15, fat: 12, fiber: 6, sugar: 4, sodium: 900 },
+  { name: 'สลัดผัก ไม่ใส่น้ำสลัด 1 จาน', grams: 200, kcal: 80, protein: 3, carbs: 12, fat: 2, fiber: 4, sugar: 4, sodium: 60 },
+  { name: 'แซลมอนย่าง 120 g กับผักต้ม', grams: 250, kcal: 320, protein: 30, carbs: 8, fat: 18, fiber: 3, sugar: 2, sodium: 300 },
+  { name: 'ทอดมันปลากราย 3 ชิ้น', grams: 120, kcal: 350, protein: 18, carbs: 20, fat: 22, fiber: 1, sugar: 3, sodium: 700 },
+  { name: 'ไก่ต้มฉีกกับผัก 150 g', grams: 230, kcal: 220, protein: 35, carbs: 4, fat: 8, fiber: 2, sugar: 2, sodium: 400 },
+  { name: 'ปลาทูนึ่ง 1 ตัว', grams: 100, kcal: 150, protein: 20, carbs: 0, fat: 7, fiber: 0, sugar: 0, sodium: 600 },
+  { name: 'เต้าหู้นึ่งซีอิ๊ว 100 g', grams: 100, kcal: 90, protein: 10, carbs: 3, fat: 4, fiber: 1, sugar: 1, sodium: 500 },
+  { name: 'โยเกิร์ตกรีกไม่หวาน 170 g', grams: 170, kcal: 130, protein: 17, carbs: 6, fat: 4, fiber: 0, sugar: 5, sodium: 60 },
+  { name: 'นมถั่วเหลืองไม่หวาน 1 กล่อง 250 ml', grams: 250, kcal: 80, protein: 7, carbs: 4, fat: 4, fiber: 1, sugar: 1, sodium: 50 },
+  { name: 'นมจืดไขมันต่ำ 1 กล่อง 200 ml', grams: 200, kcal: 90, protein: 7, carbs: 10, fat: 2.5, fiber: 0, sugar: 10, sodium: 100 },
+  { name: 'ข้าวโอ๊ตกับนม 1 ถ้วย', grams: 300, kcal: 300, protein: 12, carbs: 45, fat: 7, fiber: 5, sugar: 12, sodium: 120 },
+  { name: 'ถั่วต้ม 1 ถ้วย', grams: 150, kcal: 230, protein: 14, carbs: 40, fat: 1, fiber: 10, sugar: 1, sodium: 10 },
+  { name: 'มันเทศต้ม 1 ลูก 150 g', grams: 150, kcal: 130, protein: 2, carbs: 30, fat: 0, fiber: 4, sugar: 9, sodium: 60 },
+  { name: 'ฟักทองนึ่ง 150 g', grams: 150, kcal: 50, protein: 2, carbs: 10, fat: 0.5, fiber: 2, sugar: 5, sodium: 5 },
+  { name: 'ส้ม 1 ผล', grams: 130, kcal: 60, protein: 1, carbs: 15, fat: 0.2, fiber: 2.4, sugar: 12, sodium: 0 },
+  { name: 'มะม่วงสุก ครึ่งผล', grams: 150, kcal: 100, protein: 1, carbs: 25, fat: 0.5, fiber: 2.5, sugar: 23, sodium: 2 },
+  { name: 'ฝรั่ง 1 ผล', grams: 150, kcal: 70, protein: 2.5, carbs: 15, fat: 1, fiber: 5, sugar: 9, sodium: 3 },
+  { name: 'ชมพู่ 3 ผล', grams: 150, kcal: 60, protein: 0.5, carbs: 15, fat: 0.2, fiber: 2, sugar: 13, sodium: 0 },
+  { name: 'สตรอว์เบอร์รี 1 ถ้วย', grams: 150, kcal: 50, protein: 1, carbs: 12, fat: 0.5, fiber: 3, sugar: 7, sodium: 1 },
 ];
 let suggestCache = [];
 
@@ -1503,28 +1688,85 @@ function suggestMenus(r) {
     .map((x) => x.m);
 }
 
-function renderRemainAdvice(today) {
-  const tips = remainTips(today);
-  const r = remainOf(today);
-  let menuHtml = '';
-  if (r && r.kcal > 0) {
-    suggestCache = suggestMenus(r);
-    menuHtml = suggestCache.length
-      ? `<h3 class="meal-head">เมนูแนะนำสำหรับมื้อที่เหลือ</h3>` + suggestCache.map((m, i) => `
-        <div class="row">
-          <div class="info">
-            <span class="name">${ico('bowl')}${esc(m.name)}</span>
-            <span class="sub">${m.kcal} kcal · โปรตีน ${m.protein} g · ใยอาหาร ${m.fiber} g</span>
-          </div>
-          <button class="btn-small" type="button" data-menu="${i}">เพิ่ม</button>
-        </div>`).join('')
-      : '<p class="note">ไม่มีเมนูที่พอดีกับโควตาที่เหลือ</p>';
+let menuQuery = '';
+let adviceDay = null;
+let aiMenuBusy = false;
+const aiMenuByQuery = {}; // ผลประมาณจาก AI เก็บตามชื่อที่ค้น ไม่ต้องเรียกซ้ำ
+
+// เมนูจากทั้งรายการเมื่อพิมพ์ค้นหา ถ้าไม่พิมพ์จะแสดงเมนูที่พอดีกับโควตาที่เหลือ
+function menuListHtml() {
+  const s = menuQuery.trim().toLowerCase();
+  const r = adviceDay ? remainOf(adviceDay) : null;
+  let list;
+  if (s) {
+    const words = s.split(/\s+/);
+    list = MENU_SUGGESTIONS.filter((m) => words.every((w) => m.name.toLowerCase().includes(w)));
+    const ai = aiMenuByQuery[s];
+    if (ai) list = [ai, ...list];
+  } else {
+    list = r && r.kcal > 0 ? suggestMenus(r) : [];
   }
+  suggestCache = list;
+  const aiBtn = s ? `<button class="btn-small" type="button" data-ai-menu="1">${aiMenuBusy ? 'กำลังประมาณ…' : `ให้ AI ประมาณ "${esc(menuQuery.trim())}"`}</button>` : '';
+  if (!list.length) {
+    const msg = s ? 'ไม่พบเมนูนี้ในรายการ' : 'ไม่มีเมนูที่พอดีกับโควตาที่เหลือ ลองพิมพ์ค้นหาเมนูด้านบน';
+    return `<p class="note">${msg}</p>${aiBtn ? `<p>${aiBtn}</p>` : ''}`;
+  }
+  const title = s ? 'ผลการค้นหาเมนู' : 'เมนูแนะนำมื้อที่เหลือ';
+  return `<h3 class="meal-head">${title}</h3>` + list.map((m, i) => `
+    <div class="row">
+      <div class="info">
+        <span class="name">${ico('bowl')}${esc(m.name)}</span>
+        <span class="sub">${m.kcal} kcal · โปรตีน ${m.protein} g · คาร์บ ${m.carbs} g · ไขมัน ${m.fat} g${m.ai ? ' · AI ประมาณ' : ''}</span>
+      </div>
+      <button class="btn-small" type="button" data-menu="${i}">เพิ่ม</button>
+    </div>`).join('') + (aiBtn ? `<p>${aiBtn}</p>` : '');
+}
+
+// ให้ AI ประมาณเมนูที่ไม่มีในรายการ ใช้คีย์ AI ที่ผู้ใช้ตั้งไว้
+async function aiMenuSearch() {
+  if (aiMenuBusy) return;
+  const q = menuQuery.trim().slice(0, 200);
+  const key = q.toLowerCase();
+  if (!q) return;
+  const cfg = getAiCfg();
+  if (!aiReady(cfg)) return notReady(cfg);
+  aiMenuBusy = true;
+  $('menuList').innerHTML = menuListHtml();
+  try {
+    const { parsed, result } = await callAi(null, [{ role: 'user', content: textPrompt(q), textOnly: true }]);
+    const t = result.totals;
+    const v = (x) => (x == null ? 0 : Math.round(x * 10) / 10);
+    aiMenuByQuery[key] = {
+      name: result.food.name,
+      grams: result.grams,
+      kcal: Math.round(t.kcal),
+      protein: v(t.protein),
+      carbs: v(t.carbs),
+      fat: v(t.fat),
+      fiber: v(t.fiber),
+      sugar: v(t.sugar),
+      sodium: Math.round(t.sodium || 0),
+      ai: true,
+      confidence: parsed.confidence || 'low',
+    };
+  } catch (err) {
+    showAiError(err);
+  } finally {
+    aiMenuBusy = false;
+    $('menuList').innerHTML = menuListHtml();
+  }
+}
+
+function renderRemainAdvice(today) {
+  adviceDay = today;
+  const tips = shortTips(today);
   $('remainAdvice').innerHTML = `<div class="card-block">
-    <h2 class="section-title">คำแนะนำสำหรับส่วนที่เหลือวันนี้</h2>
+    <h2 class="section-title">วันนี้ควรกินอย่างไร</h2>
     <ul class="tips">${tips.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>
-    ${menuHtml}
-    <p class="note">เมนูและค่าสารอาหารเป็นค่าโดยประมาณ ไม่ใช่คำแนะนำทางการแพทย์</p>
+    <input id="menuSearch" type="search" placeholder="ค้นหาเมนู เช่น ต้มยำ ข้าว ไก่" value="${esc(menuQuery)}" aria-label="ค้นหาเมนู" style="width:100%;margin:8px 0">
+    <div id="menuList">${menuListHtml()}</div>
+    <p class="note">ค่าโดยประมาณ ไม่ใช่คำแนะนำทางการแพทย์</p>
   </div>`;
 }
 
@@ -2871,7 +3113,13 @@ function setupEvents() {
     const f = foodResults[Number(btn.dataset.i)];
     if (f) chooseGrams(f);
   });
+  $('remainAdvice').addEventListener('input', (e) => {
+    if (e.target.id !== 'menuSearch') return;
+    menuQuery = e.target.value;
+    $('menuList').innerHTML = menuListHtml();
+  });
   $('remainAdvice').addEventListener('click', (e) => {
+    if (e.target.closest('[data-ai-menu]')) return aiMenuSearch();
     const b = e.target.closest('[data-menu]');
     const m = b && suggestCache[Number(b.dataset.menu)];
     if (m) addSuggested(m);
@@ -2975,7 +3223,7 @@ function setupEvents() {
   $('setupNote').hidden = configured;
   setupEvents();
   loadAiForm();
-  applyTheme(store.get('theme', 'auto'));
+  applyTheme(store.get('theme', 'dark'));
   setAppIcons();
   decorateIcons();
   initAi();
