@@ -438,14 +438,50 @@ textarea { font: inherit; color: var(--fg); background: var(--surface); border: 
 .card-block, .summary { border-radius: 20px; box-shadow: 0 8px 30px rgba(0,0,0,.06); border-color: var(--line); }
 .btn, .btn-small, .btn-primary { border-radius: 14px; }
 .row, .item, .entry { border-color: var(--line); }
+/* กราฟย้อนหลังและหน้ารายละเอียดรายวัน */
+.hist-sum { margin: 0 0 4px; font-size: 14px; }
+.hist-plot { position: relative; display: flex; align-items: flex-end; gap: 6px; margin-top: 12px; }
+.hist-col { flex: 1; min-width: 0; height: 100%; display: flex; align-items: flex-end; justify-content: center; padding: 0; border: 0; background: none; cursor: pointer; }
+.hist-bar { width: 100%; max-width: 26px; border-radius: 6px 6px 2px 2px; background: var(--accent); }
+.hist-bar.over { background: var(--danger); }
+.hist-goal { position: absolute; left: 0; right: 0; border-top: 1px dashed var(--muted); pointer-events: none; }
+.hist-labels { display: flex; gap: 6px; margin-top: 4px; }
+.hist-labels span { flex: 1; min-width: 0; text-align: center; font-size: 11px; color: var(--muted); }
+.day-meal { margin-top: 12px; }
+.day-meal-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding-bottom: 4px; border-bottom: 1px solid var(--line); }
+.day-item { display: flex; flex-direction: column; padding: 6px 0; min-width: 0; }
+.day-item .sub { overflow-wrap: anywhere; }
+#dayBody { max-height: 60vh; overflow-y: auto; }
+.hist-col:disabled { cursor: default; }
+.hist-bar.none { background: var(--line); }
+.hist-goal span { position: absolute; right: 0; bottom: 2px; padding-left: 4px; font-size: 11px; color: var(--muted); background: var(--surface); }
+.hist-legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; font-size: 12px; color: var(--muted); }
+.hist-legend span { display: inline-flex; align-items: center; gap: 4px; }
+.lg { display: inline-block; width: 10px; height: 10px; border-radius: 3px; background: var(--accent); }
+.lg.over { background: var(--danger); }
+.lg.none { background: var(--line); }
+.mark.mark-icon { background: none; padding: 0; }
+.mark.mark-icon svg { display: block; }
+.tagline { font-size: 15px; font-weight: 500; color: var(--muted); white-space: nowrap; }
 </style>
 
 <div class="wrap">
 
 <section id="loginView" hidden>
   <div class="login">
-    <div class="mark" aria-hidden="true">kcal</div>
-    <h1>นับแคล</h1>
+    <div class="mark mark-icon" aria-hidden="true">
+      <svg viewBox="0 0 100 100" width="56" height="56" focusable="false">
+        <rect width="100" height="100" rx="22" fill="#007aff"/>
+        <ellipse cx="50" cy="58" rx="30" ry="26" fill="#fff"/>
+        <path d="M24 44L26 14L44 34Z" fill="#fff"/>
+        <path d="M76 44L74 14L56 34Z" fill="#fff"/>
+        <circle cx="40" cy="56" r="4" fill="#007aff"/>
+        <circle cx="60" cy="56" r="4" fill="#007aff"/>
+        <path d="M46 66L54 66L50 71Z" fill="#ff8fa3"/>
+        <path d="M30 66L12 62M30 71L12 73M70 66L88 62M70 71L88 73" stroke="#fff" stroke-width="2" stroke-linecap="round" fill="none"/>
+      </svg>
+    </div>
+    <h1>นับแคล <span class="tagline">ดีกว่าจด</span></h1>
     <p class="sub">บันทึกมื้ออาหาร ดูสารอาหาร และวิเคราะห์ BMI กับ TDEE</p>
     <div id="gbtn"></div>
     <button id="guestBtn" class="btn btn-primary" type="button" hidden>เข้าใช้แบบทดลอง</button>
@@ -484,7 +520,7 @@ textarea { font: inherit; color: var(--fg); background: var(--surface); border: 
     <p id="nutriNote" class="note"></p>
     <p id="homeNote" class="error" role="status"></p>
     <h2 class="section-title">เปรียบเทียบกับวันก่อนๆ</h2>
-    <div id="history" class="rows"></div>
+    <div id="history"></div>
     <h2 class="section-title">คำแนะนำการกิน</h2>
     <div id="advice" class="card-block"></div>
     <h2 class="section-title">รายการวันนี้</h2>
@@ -613,6 +649,14 @@ textarea { font: inherit; color: var(--fg); background: var(--surface); border: 
     </section>
   </main>
 </section>
+
+<div id="dayModal" class="overlay" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="dayTitle">
+    <h3 id="dayTitle"></h3>
+    <div id="dayBody"></div>
+    <button id="dayClose" class="btn btn-primary wide" type="button">ปิด</button>
+  </div>
+</div>
 
 <div id="modal" class="overlay" hidden>
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
@@ -1225,31 +1269,64 @@ function renderHistory() {
   const avgKcal = recent.length ? recent.reduce((s, d) => s + d.kcal, 0) / recent.length : null;
   const overDays = days.filter((d) => d.kcal > goal).length;
   const summary = days.length
-    ? `<div class="row"><div class="info">
-        <span class="name">เฉลี่ย ${recent.length} วันล่าสุด</span>
-        <span class="sub">${Math.round(avgKcal)} kcal ต่อวัน · เป้า ${Math.round(goal)} kcal</span>
-        <span class="sub">วันนี้ ${Math.round(todayTotals.kcal)} kcal · เกินเป้า ${overDays} จาก ${days.length} วัน</span>
-      </div></div>`
+    ? `<p class="hist-sum">เฉลี่ย ${recent.length} วันล่าสุด ${Math.round(avgKcal)} kcal ต่อวัน · เป้า ${Math.round(goal)} kcal</p>
+       <p class="hist-sum">วันนี้ ${Math.round(todayTotals.kcal)} kcal · เกินเป้า ${overDays} จาก ${days.length} วัน</p>`
     : '';
+  // กราฟแท่งย้อนหลัง (เก่า → ใหม่) แตะแท่งเพื่อดูรายการแต่ละมื้อ
+  // 14 วันก่อนวันนี้ทุกวันตามปฏิทิน (วันที่ไม่มีบันทึกเป็นแท่งว่าง) เรียงเก่า → ใหม่
+  const dayMap = Object.fromEntries(days.map((d) => [d.date, d]));
+  const plotDays = [];
+  for (let i = 14; i >= 1; i--) {
+    const dt = new Date();
+    dt.setHours(12, 0, 0, 0);
+    dt.setDate(dt.getDate() - i);
+    const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+    plotDays.push({ date: key, kcal: dayMap[key] ? dayMap[key].kcal : 0, has: !!dayMap[key] });
+  }
+  const maxV = Math.max(goal, ...plotDays.map((d) => d.kcal), 1);
+  const H = 120;
+  const goalY = Math.round((goal / maxV) * H);
+  const bars = plotDays.map((d) => {
+    const h = d.has ? Math.max(2, Math.round((d.kcal / maxV) * H)) : 2;
+    const cls = !d.has ? 'hist-bar none' : d.kcal > goal ? 'hist-bar over' : 'hist-bar';
+    const attr = d.has ? `data-day="${d.date}" aria-label="${label(d.date)} ${Math.round(d.kcal)} kcal"` : `disabled aria-label="${label(d.date)} ไม่มีบันทึก"`;
+    return `<button class="hist-col" type="button" ${attr}><div class="${cls}" style="height:${h}px"></div></button>`;
+  }).join('');
+  const labels = plotDays.map((d) => `<span>${new Date(`${d.date}T00:00`).getDate()}</span>`).join('');
+  const chart = `<div class="hist-plot" style="height:${H}px">
+      <div class="hist-goal" style="bottom:${goalY}px"><span>เป้า ${Math.round(goal)}</span></div>${bars}</div>
+    <div class="hist-labels">${labels}</div>
+    <div class="hist-legend"><span><i class="lg"></i>ไม่เกินเป้า</span><span><i class="lg over"></i>เกินเป้า</span><span><i class="lg none"></i>ไม่มีบันทึก</span></div>
+    <p class="note">ย้อนหลัง 14 วันก่อนวันนี้ แตะแท่งเพื่อดูว่าวันนั้นกินอะไรในแต่ละมื้อ</p>`;
   $('history').innerHTML = days.length
-    ? summary + days.map((d) => {
-      const diff = Math.round(d.kcal - goal);
-      return `<div class="row">
-        <div class="info">
-          <span class="name">${label(d.date)}</span>
-          <span class="sub">${d.meals} รายการ · ${nutriText(d) || 'ไม่มีข้อมูลสารอาหาร'}</span>
-        </div>
-        <div class="hist-end">
-          <span class="kcal">${Math.round(d.kcal)} kcal</span>
-          <span class="sub ${diff > 0 ? 'over-text' : ''}">${diff > 0 ? `เกิน ${diff}` : `เหลือ ${-diff}`}</span>
-        </div>
-      </div>`;
-    }).join('')
+    ? `<div class="card-block">${summary}${chart}</div>`
     : '<p class="empty">ยังไม่มีข้อมูลวันก่อนหน้า บันทึกอาหารแล้วจะเห็นย้อนหลังที่นี่</p>';
 
   const tips = buildAdvice(todayTotals, days, targets);
   $('advice').innerHTML = `<ul class="tips">${tips.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>
     <p class="note">คำแนะนำนี้เป็นข้อมูลทั่วไป ไม่ใช่คำแนะนำทางการแพทย์</p>`;
+}
+
+// เปิดดูรายการทั้งหมดของวันที่เลือก แยกตามมื้อ
+function openDay(date) {
+  const list = entries.filter((e) => e.date === date);
+  const t = sumDay(list);
+  $('dayTitle').textContent = new Date(`${date}T00:00`).toLocaleDateString('th-TH', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const sections = Object.keys(MEALS).map((k) => {
+    const items = list.filter((e) => e.meal === k);
+    if (!items.length) return '';
+    const mt = sumDay(items);
+    return `<div class="day-meal">
+      <div class="day-meal-head"><strong>${esc(MEALS[k])}</strong><span class="sub">${Math.round(mt.kcal)} kcal</span></div>
+      ${items.map((e) => `<div class="day-item">
+        <span class="name">${esc(e.name)}</span>
+        <span class="sub">${Math.round(e.grams)} g · ${Math.round(e.kcal)} kcal${nutriText(e) ? ` · ${nutriText(e)}` : ''}</span>
+      </div>`).join('')}
+    </div>`;
+  }).join('');
+  $('dayBody').innerHTML = `<p class="sub">รวม ${Math.round(t.kcal)} kcal · เป้า ${Math.round(goal)} kcal</p>`
+    + (sections || '<p class="empty">ไม่มีรายการในวันนี้</p>');
+  $('dayModal').hidden = false;
 }
 
 function buildAdvice(todayTotals, days, targets) {
@@ -1657,7 +1734,7 @@ const AI_PROVIDERS = {
   claude: { label: 'Claude (ในหน้านี้)', kind: 'claude', needsKey: false, baseUrl: '', models: ['default'] },
   gemini: { label: 'Google Gemini (มีโควตาฟรี)', kind: 'gemini', needsKey: true, baseUrl: 'https://generativelanguage.googleapis.com/v1beta', models: ['gemini-4-hydrogen', 'gemini-3.8-flash', 'gemini-flash-latest'] },
   openrouter: { label: 'OpenRouter (มีโมเดลฟรี)', kind: 'openai', needsKey: true, baseUrl: 'https://openrouter.ai/api/v1', models: ['nvidia/nemotron-3.5-super-vl:free', 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free', 'inclusionai/ling-3.2-flash:free'] },
-  groq: { label: 'Groq', kind: 'openai', needsKey: true, baseUrl: 'https://api.groq.com/openai/v1', models: ['meta-llama/llama-4-scout-17b-16e-instruct'] },
+  groq: { label: 'Groq', kind: 'openai', needsKey: true, baseUrl: 'https://api.groq.com/openai/v1', models: ['qwen/qwen3.8-27b'] },
   custom: { label: 'กำหนดเอง (OpenAI-compatible)', kind: 'openai', needsKey: true, baseUrl: '', models: [] },
 };
 
@@ -1769,7 +1846,7 @@ function readStoredAi() {
 }
 
 // โมเดลที่ปิดให้ผู้ใช้ใหม่แล้ว ถ้าเคยบันทึกไว้จะเปลี่ยนไปใช้ตัวแนะนำแทน
-const RETIRED_MODELS = ['gemini-2.5-flash'];
+const RETIRED_MODELS = ['gemini-2.5-flash', 'meta-llama/llama-4-scout-17b-16e-instruct']; // Groq ปิดโมเดลนี้เมื่อ 17 ก.ค. 2026
 
 function aiCfgFor(provider) {
   const s = readStoredAi();
@@ -2230,6 +2307,12 @@ function setupEvents() {
   $('photoClear').onclick = resetPhoto;
   $('photoAnalyze').onclick = analyzePhoto;
   $('textAnalyze').onclick = analyzeText;
+  $('history').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-day]');
+    if (btn) openDay(btn.dataset.day);
+  });
+  $('dayClose').onclick = () => { $('dayModal').hidden = true; };
+  $('dayModal').addEventListener('click', (e) => { if (e.target === $('dayModal')) $('dayModal').hidden = true; });
   $('aiText').addEventListener('keydown', (e) => { if (e.key === 'Enter') analyzeText(); });
   $('aiResult').addEventListener('click', (e) => {
     if (e.target.closest('[data-act="add-ai"]')) addAiFood();
