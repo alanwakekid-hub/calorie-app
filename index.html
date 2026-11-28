@@ -1450,13 +1450,100 @@ function remainTips(today) {
   return tips;
 }
 
+// เมนูอาหารทั่วไปพร้อมค่าโดยประมาณต่อ 1 จาน (ค่าไม่ได้ยึดตามสูตรเฉพาะ)
+const MENU_SUGGESTIONS = [
+  { name: 'ไข่ต้ม 2 ฟอง', grams: 100, kcal: 155, protein: 13, carbs: 1, fat: 11, fiber: 0, sugar: 1, sodium: 124 },
+  { name: 'ไข่ขาวต้ม 4 ฟอง', grams: 130, kcal: 68, protein: 14, carbs: 1, fat: 0.2, fiber: 0, sugar: 1, sodium: 220 },
+  { name: 'อกไก่ย่าง 150 g กับผักต้ม', grams: 250, kcal: 300, protein: 45, carbs: 5, fat: 9, fiber: 4, sugar: 3, sodium: 350 },
+  { name: 'สลัดอกไก่ น้ำสลัดน้ำมันมะกอก', grams: 300, kcal: 330, protein: 35, carbs: 12, fat: 15, fiber: 5, sugar: 5, sodium: 500 },
+  { name: 'ปลานึ่งมะนาว 150 g กับข้าว 1 ทัพพี', grams: 250, kcal: 310, protein: 32, carbs: 22, fat: 8, fiber: 2, sugar: 2, sodium: 500 },
+  { name: 'ต้มจืดเต้าหู้หมูสับ', grams: 300, kcal: 180, protein: 18, carbs: 6, fat: 8, fiber: 2, sugar: 2, sodium: 700 },
+  { name: 'ข้าวกล้อง 1 ทัพพี', grams: 100, kcal: 110, protein: 2.5, carbs: 23, fat: 1, fiber: 2, sugar: 0.5, sodium: 5 },
+  { name: 'ผัดผักรวมไม่ใส่ไขมัน 1 จาน', grams: 250, kcal: 120, protein: 5, carbs: 12, fat: 5, fiber: 4, sugar: 4, sodium: 400 },
+  { name: 'โยเกิร์ตไม่หวาน 150 g', grams: 150, kcal: 90, protein: 8, carbs: 7, fat: 4, fiber: 0, sugar: 7, sodium: 70 },
+  { name: 'กล้วยหอม 1 ผล', grams: 100, kcal: 90, protein: 1, carbs: 23, fat: 0.3, fiber: 2.6, sugar: 12, sodium: 1 },
+  { name: 'แอปเปิล 1 ผล', grams: 180, kcal: 95, protein: 0.5, carbs: 25, fat: 0.3, fiber: 4.4, sugar: 19, sodium: 2 },
+  { name: 'ถั่วอัลมอนด์ 20 เม็ด', grams: 30, kcal: 175, protein: 6, carbs: 6, fat: 15, fiber: 3.5, sugar: 1.2, sodium: 0 },
+];
+let suggestCache = [];
+
+// ค่าที่เหลือวันนี้ (kcal และสารอาหาร) ใช้เลือกเมนู
+function remainOf(today) {
+  const p = profile && profile.plan;
+  if (!p) return null;
+  const t = p.targets;
+  const left = (k) => (t[k] || 0) - sumNutrient(today, k);
+  return {
+    kcal: Math.round(goal - today.reduce((s, e) => s + e.kcal, 0)),
+    protein: left('protein'), carbs: left('carbs'), fat: left('fat'),
+    fiber: left('fiber'), sugar: left('sugar'), sodium: left('sodium'),
+  };
+}
+
+// เลือกเมนูที่พอดีกับพลังงานที่เหลือ และช่วยเติมโปรตีน/ใยอาหารที่ยังขาด โดยไม่ทำให้คาร์บ ไขมัน น้ำตาล โซเดียมเกิน
+function suggestMenus(r) {
+  if (!r || r.kcal <= 0) return [];
+  const scale = { carbs: 100, fat: 30, sugar: 25, sodium: 600 };
+  const need = { protein: 30, fiber: 8 };
+  return MENU_SUGGESTIONS
+    .filter((m) => m.kcal <= r.kcal * 1.1 + 20)
+    .map((m) => {
+      let score = 0;
+      for (const k of Object.keys(need)) score += (Math.min(m[k], Math.max(r[k], 0)) / need[k]) * 2;
+      for (const k of Object.keys(scale)) {
+        const avail = Math.max(r[k], 0);
+        const over = m[k] - avail;
+        if (over > 0) score -= over / scale[k] * 2;
+      }
+      return { m, score };
+    })
+    .filter((x) => x.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 4)
+    .map((x) => x.m);
+}
+
 function renderRemainAdvice(today) {
   const tips = remainTips(today);
+  const r = remainOf(today);
+  let menuHtml = '';
+  if (r && r.kcal > 0) {
+    suggestCache = suggestMenus(r);
+    menuHtml = suggestCache.length
+      ? `<h3 class="meal-head">เมนูแนะนำสำหรับมื้อที่เหลือ</h3>` + suggestCache.map((m, i) => `
+        <div class="row">
+          <div class="info">
+            <span class="name">${ico('bowl')}${esc(m.name)}</span>
+            <span class="sub">${m.kcal} kcal · โปรตีน ${m.protein} g · ใยอาหาร ${m.fiber} g</span>
+          </div>
+          <button class="btn-small" type="button" data-menu="${i}">เพิ่ม</button>
+        </div>`).join('')
+      : '<p class="note">ไม่มีเมนูที่พอดีกับโควตาที่เหลือ</p>';
+  }
   $('remainAdvice').innerHTML = `<div class="card-block">
     <h2 class="section-title">คำแนะนำสำหรับส่วนที่เหลือวันนี้</h2>
     <ul class="tips">${tips.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>
-    <p class="note">คำแนะนำทั่วไป ไม่ใช่คำแนะนำทางการแพทย์</p>
+    ${menuHtml}
+    <p class="note">เมนูและค่าสารอาหารเป็นค่าโดยประมาณ ไม่ใช่คำแนะนำทางการแพทย์</p>
   </div>`;
+}
+
+// เพิ่มเมนูแนะนำเป็นรายการของมื้อที่ควรเป็นตามเวลา
+function addSuggested(m) {
+  addEntry({
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+    date: todayKey(),
+    meal: mealByTime(),
+    name: m.name,
+    grams: m.grams,
+    kcal: m.kcal,
+    protein: m.protein,
+    carbs: m.carbs,
+    fat: m.fat,
+    fiber: m.fiber,
+    sugar: m.sugar,
+    sodium: m.sodium,
+  });
 }
 
 function renderNutrients(today) {
@@ -2783,6 +2870,11 @@ function setupEvents() {
     if (!btn) return;
     const f = foodResults[Number(btn.dataset.i)];
     if (f) chooseGrams(f);
+  });
+  $('remainAdvice').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-menu]');
+    const m = b && suggestCache[Number(b.dataset.menu)];
+    if (m) addSuggested(m);
   });
   $('recentList').addEventListener('click', (e) => {
     const b = e.target.closest('[data-r]');
